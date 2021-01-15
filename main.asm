@@ -1,0 +1,14 @@
+; Bruce Lee : NuLA version
+; 15 January 2021
+
+ORG &900
+
+.START:
+    RTS
+.END:
+    PRINT "Bytes used: ",END-START
+    PUTFILE "org/BLOAD","BLOAD",&1900,&1900
+    PUTFILE "org/BRUCE0","BRUCE0",&1100,&1100
+    PUTFILE "org/BRUCE1","BRUCE1",&1900,&4D80
+    PUTFILE "org/BRUCEP","BRUCEP",&6840,&6840
+    SAVE "BRUCE",START,END
