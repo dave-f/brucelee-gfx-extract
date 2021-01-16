@@ -30,16 +30,17 @@ $(OUTPUT_SSD): $(MAIN_ASM) Makefile
 #$(GFX_OBJECTS): gfxscript
 #	$(PNG2BBC) gfxscript
 
-#gfx:
+gfx:
 #	$(PNG2BBC) gfxscript
-#	$(EMACS) -batch -Q --eval="(package-initialize)" -l repack.el --eval="(reverse-graphic \"bin/fuel.bin\" \"bin/fuel.bbc\")"
+	$(EMACS) -batch -Q --eval="(package-initialize)" -l repack.el --eval="(fill-file \"bin/test.bin\" 12 24)"
 #	$(CP) bin\game.pal.new bin\game.pal
 #	$(RM) bin\game.pal.new
-#	$(SNAP) org/jet-pac bin/platform.bin 7680 bin/jet-pac-nula
+	$(SNAP) org/BRUCE1 bin/test.bin 10565 new/BRUCE1
 
 clean:
 	$(RM) $(OUTPUT_SSD)
 	$(RM) /Q bin\*.*
+	$(RM) /Q new\*.*
 
 run:
 	$(BEEBEM) $(BEEBEM_FLAGS) $(OUTPUT_SSD)
