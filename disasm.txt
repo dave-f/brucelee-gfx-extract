@@ -46,16 +46,16 @@
 196C 20 16 15 JSR &1516
 196F 20 2D 11 JSR &112D
 1972 20 59 10 JSR &1059
-1975 20 F9 17 JSR &17F9
+1975 20 F9 17 JSR &17F9         ; Handle palette changes
 1978 A5 13    LDA &13
 197A C9 09    CMP #&09
 197C F0 0B    BEQ &1989
-197E C9 07    CMP #&07
+197E C9 07    CMP #&07          ; Then check for screens 4, 7 or 9..
 1980 F0 07    BEQ &1989
 1982 C9 04    CMP #&04
 1984 F0 03    BEQ &1989
-1986 20 DE 1D JSR &1DDE
-1989 A5 12    LDA &12
+1986 20 DE 1D JSR &1DDE         ; Handle something???
+1989 A5 12    LDA &12           ; Not sure what &12 is yet? Dead flag? Collision flag?
 198B F0 14    BEQ &19A1
 198D C6 1B    DEC &1B           ; Decrement lives (Death by flying yellow thing)
 198F 20 FC 1A JSR &1AFC
@@ -370,12 +370,12 @@
 1BE6 65 80    ADC &80
 1BE8 85 80    STA &80
 1BEA 60       RTS
-1BEB 48       PHA
+1BEB 48       PHA               ; Keyscan routine
 1BEC A8       TAY
-1BED B6 70    LDX 70,Y
+1BED B6 70    LDX &70,Y         ; Get from keytable
 1BEF A0 FF    LDY #&FF
 1BF1 A9 81    LDA #&81
-1BF3 20 F4 FF JSR &FFF4
+1BF3 20 F4 FF JSR &FFF4         ; Read key (OSBYTE 129)
 1BF6 68       PLA
 1BF7 E0 FF    CPX #&FF
 1BF9 60       RTS
@@ -1004,29 +1004,29 @@
 20FD 86 89    STX &89
 20FF 20 5A 1B JSR &1B5A
 2102 4C 2D 11 JMP &112D
-2105 A2 AA    LDX #&AA
+2105 A2 AA    LDX #&AA          ; X/Y = &15AA
 2107 A0 15    LDY #&15
-2109 4C 17 11 JMP &1117
-210C A2 AA    LDX #&AA
+2109 4C 17 11 JMP &1117         ; Skip straight to &2117
+210C A2 AA    LDX #&AA          ; This is JMP/JSR into from a variety of places
 210E A0 15    LDY #&15
 2110 4C 31 11 JMP &1131
 2113 A2 91    LDX #&91
 2115 A0 15    LDY #&15
 2117 86 7B    STX &7B
-2119 84 7C    STY &7C
+2119 84 7C    STY &7C           ; &7B/&7C -> &15AA
 211B A9 80    LDA #&80
 211D 85 7D    STA &7D
 211F A9 00    LDA #&00
-2121 85 7E    STA &7E
-2123 A0 18    LDY #&18
+2121 85 7E    STA &7E           ; &7D/&7E -> &0080
+2123 A0 18    LDY #&18          ; Copy 25 bytes to &80, last byte at &98
 2125 B1 7B    LDA (&7B),Y
 2127 91 7D    STA (&7D),Y
 2129 88       DEY
-212A 10 F9    BPL &2125
+212A 10 F9    BPL &2125         ; Copied all bytes?
 212C 60       RTS
 212D A2 91    LDX #&91
 212F A0 15    LDY #&15
-2131 86 7D    STX &7D
+2131 86 7D    STX &7D           ; Begin drawing level?
 2133 84 7E    STY &7E
 2135 A9 80    LDA #&80
 2137 85 7B    STA &7B
@@ -1034,13 +1034,13 @@
 213B 85 7C    STA &7C
 213D A0 16    LDY #&16
 213F D0 E4    BNE &2125
-2141 A5 21    LDA &21
-2143 29 FE    AND #&FE
+2141 A5 21    LDA &21           ; &21 = some sort of palette flag?
+2143 29 FE    AND #&FE          ; Mask off LSB
 2145 AA       TAX
 2146 BD B4 26 LDA &26B4,X
-2149 8D 9B 11 STA &119B
+2149 8D 9B 11 STA &119B        ; Self modify the LDA below
 214C BD B5 26 LDA &26B5,X
-214F 8D 9C 11 STA &119C
+214F 8D 9C 11 STA &119C        ; Self modify the LDA below
 2152 A5 21    LDA &21
 2154 29 01    AND #&01
 2156 4C 6D 11 JMP &116D
@@ -1934,25 +1934,25 @@
 27F4 BC CB D3 LDY &D3CB,X
 27F7 E3       ???
 27F8 F3       ???
-27F9 78       SEI
+27F9 78       SEI               ; Handle palette changes (also called from demo mode)
 27FA C6 25    DEC &25
 27FC D0 43    BNE &2841
 27FE A9 03    LDA #&03
 2800 85 25    STA &25
-2802 A5 13    LDA &13
+2802 A5 13    LDA &13           ; Is it screen 5?
 2804 C9 05    CMP #&05
 2806 F0 10    BEQ &2818
-2808 C9 09    CMP #&09
+2808 C9 09    CMP #&09          ; or 9?
 280A F0 0C    BEQ &2818
-280C C9 0A    CMP #&0A
+280C C9 0A    CMP #&0A          ; or 10?
 280E F0 08    BEQ &2818
-2810 C9 0B    CMP #&0B
+2810 C9 0B    CMP #&0B          ; or 11?
 2812 F0 04    BEQ &2818
-2814 C9 04    CMP #&04
-2816 D0 2B    BNE &2843
+2814 C9 04    CMP #&04          ; or 4?
+2816 D0 2B    BNE &2843         ; None of these, branch to ...
 2818 A5 26    LDA &26
 281A 49 FF    EOR #&FF
-281C 85 26    STA &26
+281C 85 26    STA &26           ; Flip &26
 281E D0 0D    BNE &282D
 2820 A9 90    LDA #&90
 2822 8D 21 FE STA &FE21
@@ -1970,9 +1970,9 @@
 283E 8C 21 FE STY &FE21
 2841 58       CLI
 2842 60       RTS
-2843 C9 08    CMP #&08
+2843 C9 08    CMP #&08          ; Second part of the screen routine, check for screen 8
 2845 F0 04    BEQ &284B
-2847 C9 06    CMP #&06
+2847 C9 06    CMP #&06          ; .. or screen 6? (Is this the smoke belches?)
 2849 D0 1A    BNE &2865
 284B E6 26    INC &26
 284D A6 26    LDX &26
@@ -1987,27 +1987,27 @@
 285D 85 25    STA &25
 285F BD 67 18 LDA &1867,X
 2862 8D 21 FE STA &FE21
-2865 58       CLI
-2866 60       RTS
+2865 58       CLI               ; Clear interrupt flag
+2866 60       RTS               ; And return
 2867 A7       ???
 2868 A0 B0    LDY #&B0
 286A C0 C7    CPY #&C7
 286C B7       ???
-286D A5 13    LDA &13
-286F 0A       ASL A
-2870 85 7D    STA &7D
-2872 0A       ASL A
-2873 65 7D    ADC &7D
+286D A5 13    LDA &13           ; Get current screen
+286F 0A       ASL A             ; *2
+2870 85 7D    STA &7D           ; Store at &7D
+2872 0A       ASL A             ; *4
+2873 65 7D    ADC &7D           ; *6
 2875 AA       TAX
-2876 BD B2 20 LDA &20B2,X
+2876 BD B2 20 LDA &20B2,X       ; Load from Lookup table at &20B2
 2879 85 7D    STA &7D
 287B BD B3 20 LDA &20B3,X
-287E 85 7E    STA &7E
+287E 85 7E    STA &7E           ; Store at &7D/&7E
 2880 A0 00    LDY #&00
-2882 60       RTS
-2883 20 6D 18 JSR &186D
+2882 60       RTS               ; And return
+2883 20 6D 18 JSR &186D         ; Call the routine above, gets "something" to &7D/&7E
 2886 A9 80    LDA #&80
-2888 85 1C    STA &1C
+2888 85 1C    STA &1C           ; &1C = &80
 288A B1 7D    LDA (&7D),Y
 288C C9 FF    CMP #&FF
 288E F0 28    BEQ &28B8
@@ -2113,13 +2113,13 @@
 2947 4C 4B 19 JMP &194B
 294A 60       RTS
 294B 78       SEI
-294C A5 13    LDA &13
-294E 0A       ASL A
+294C A5 13    LDA &13           ; Load current screen number
+294E 0A       ASL A             ; *2
 294F AA       TAX
 2950 BD 60 19 LDA &1960,X
 2953 85 7B    STA &7B
 2955 BD 61 19 LDA &1961,X
-2958 85 7C    STA &7C
+2958 85 7C    STA &7C           ; Read 2 bytes from the lookup table at &1960
 295A 20 6D 18 JSR &186D
 295D 6C 7B 00 JMP (&007B)
 2960 86 19    STX &19
@@ -2499,12 +2499,12 @@
 2C40 A9 1D    LDA #&1D
 2C42 85 10    STA &10
 2C44 20 67 1C JSR &1C67
-2C47 A5 13    LDA &13           ; .. skip to here, load screen number
+2C47 A5 13    LDA &13           ; .. skip to here, load screen number again
 2C49 0A       ASL A             ; A = current screen * 2
-2C4A 85 7B    STA &7B           ; &7B =
+2C4A 85 7B    STA &7B           ; Store in &7B
 2C4C 0A       ASL A             ; A = current screen * 4
-2C4D 18       CLC
-2C4E 65 7B    ADC &7B           ; A = current screen * 6
+2C4D 18       CLC               ; Add &7B
+2C4E 65 7B    ADC &7B           ; So A = current screen * 6
 2C50 AA       TAX               ; Transfer to index register
 2C51 BD B0 20 LDA &20B0,X       ; And load first byte
 2C54 85 0F    STA &0F
@@ -2513,7 +2513,7 @@
 2C5B 20 67 1C JSR &1C67
 2C5E 20 83 18 JSR &1883
 2C61 20 2D 17 JSR &172D
-2C64 4C 4B 19 JMP &194B
+2C64 4C 4B 19 JMP &194B         ; .. and jump somewhere
 2C67 A0 00    LDY #&00
 2C69 B1 0F    LDA (&0F),Y
 2C6B C8       INY
@@ -2534,11 +2534,11 @@
 2C84 85 1D    STA &1D
 2C86 20 2E 16 JSR &162E
 2C89 A5 13    LDA &13
-2C8B C9 05    CMP #&05
+2C8B C9 05    CMP #&05          ; Check for screen 5 again
 2C8D D0 16    BNE &2CA5
 2C8F A5 11    LDA &11
 2C91 F0 12    BEQ &2CA5
-2C93 A5 1C    LDA &1C
+2C93 A5 1C    LDA &1C           ; What is in &1C?
 2C95 C9 2B    CMP #&2B
 2C97 F0 28    BEQ &2CC1
 2C99 C9 2A    CMP #&2A
@@ -2677,7 +2677,7 @@
 2D95 85 87    STA &87
 2D97 4C 0C 11 JMP &110C
 2D9A 08       PHP
-2D9B 46 01    LSR &01
+2D9B 46 01    LSR &01           ; Level data?
 2D9D 80 00    BRA &2D9F
 2D9F 46 01    LSR &01
 2DA1 80 00    BRA &2DA3
@@ -2716,7 +2716,7 @@
 2DDB 60       RTS
 2DDC 68       PLA
 2DDD 60       RTS
-2DDE 20 05 11 JSR &1105
+2DDE 20 05 11 JSR &1105         ; What does this do
 2DE1 20 CA 1D JSR &1DCA
 2DE4 48       PHA
 2DE5 85 7F    STA &7F
@@ -2907,31 +2907,31 @@
 2F36 69 01    ADC #&01
 2F38 D0 D8    BNE &2F12
 2F3A 20 C3 15 JSR &15C3
-2F3D A9 00    LDA #&00
+2F3D A9 00    LDA #&00          ; Demo mode
 2F3F 85 28    STA &28
 2F41 85 32    STA &32
 2F43 85 11    STA &11
 2F45 85 29    STA &29
-2F47 20 05 11 JSR &1105
+2F47 20 05 11 JSR &1105         ; Set up some sort of table at &80
 2F4A 20 68 1D JSR &1D68
 2F4D 20 55 09 JSR &0955
-2F50 A9 00    LDA #&00
+2F50 A9 00    LDA #&00          ; Demo mode loop
 2F52 85 28    STA &28
-2F54 20 75 09 JSR &0975
-2F57 20 DE 1D JSR &1DDE
+2F54 20 75 09 JSR &0975         ; Handle palette change effects
+2F57 20 DE 1D JSR &1DDE         ; Something to do with moving yellow things
 2F5A A9 09    LDA #&09
-2F5C 20 EB 0B JSR &0BEB
-2F5F F0 12    BEQ &2F73
-2F61 C6 32    DEC &32
-2F63 30 EB    BMI &2F50
-2F65 E6 13    INC &13
+2F5C 20 EB 0B JSR &0BEB         ; Check for keypress
+2F5F F0 12    BEQ &2F73         ; If pressed..
+2F61 C6 32    DEC &32           ; Otherwise dec &32 (timer)
+2F63 30 EB    BMI &2F50         ; If still > &80, jump to &2F50
+2F65 E6 13    INC &13           ; Increase level
 2F67 A5 13    LDA &13
-2F69 C9 0C    CMP #&0C
+2F69 C9 0C    CMP #&0C          ; Check for level number 12
 2F6B 90 D0    BCC &2F3D
-2F6D A9 00    LDA #&00
+2F6D A9 00    LDA #&00          ; Reset to 0
 2F6F 85 13    STA &13
-2F71 F0 CA    BEQ &2F3D
-2F73 A9 00    LDA #&00
+2F71 F0 CA    BEQ &2F3D         ; Loop back around
+2F73 A9 00    LDA #&00          ; Key pressed, so start setting up
 2F75 85 15    STA &15
 2F77 85 16    STA &16
 2F79 85 17    STA &17
@@ -7281,7 +7281,7 @@
 4A3A A9 80    LDA #&80
 4A3C A2 FA    LDX #&FA
 4A3E A0 FF    LDY #&FF
-4A40 20 F4 FF JSR &FFF4
+4A40 20 F4 FF JSR &FFF4         ; Read ADC
 4A43 E0 0E    CPX #&0E
 4A45 90 F3    BCC &4A3A
 4A47 A4 7B    LDY &7B
