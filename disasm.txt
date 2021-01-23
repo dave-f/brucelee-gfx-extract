@@ -1034,7 +1034,7 @@
 213B 85 7C    STA &7C
 213D A0 16    LDY #&16
 213F D0 E4    BNE &2125
-2141 A5 21    LDA &21           ; &21 = some sort of palette flag?
+2141 A5 21    LDA &21           ; &21 = some sort of palette/tile flag?
 2143 29 FE    AND #&FE          ; Mask off LSB
 2145 AA       TAX
 2146 BD B4 26 LDA &26B4,X
@@ -1042,8 +1042,8 @@
 214C BD B5 26 LDA &26B5,X
 214F 8D 9C 11 STA &119C        ; Self modify the LDA below
 2152 A5 21    LDA &21
-2154 29 01    AND #&01
-2156 4C 6D 11 JMP &116D
+2154 29 01    AND #&01         ; Leave only LSB
+2156 4C 6D 11 JMP &116D        ; and jump to 116D..
 2159 A2 00    LDX #&00
 215B A0 00    LDY #&00
 215D A5 00    LDA &00
@@ -1054,25 +1054,25 @@
 2166 E5 0A    SBC &0A
 2168 85 7C    STA &7C
 216A 60       RTS
-216B A9 FF    LDA #&FF
-216D 85 21    STA &21           ; &21 = 255
+216B A9 FF    LDA #&FF          ; Entry point for waterfall and smokebelch (I think)
+216D 85 21    STA &21           ; .. store 255 at &21
 216F 20 59 11 JSR &1159
-2172 A5 00    LDA &00
-2174 85 06    STA &06           ; &06 = &00
-2176 A5 01    LDA &01
-2178 85 07    STA &07           ; &07 = &01
+2172 A5 00    LDA &00           ; Save a copy of the top of this character
+2174 85 06    STA &06           ; (screen address, eg. &4E00, &4E08..), from
+2176 A5 01    LDA &01           ; its work pointers at &00/&01 to &06/&07
+2178 85 07    STA &07
 217A A5 7C    LDA &7C
 217C 85 0A    STA &0A           ; &0A = &7C
 217E 20 12 13 JSR &1312
 2181 F0 69    BEQ &21EC         ; If 0, skip over all this to the +8 bit
 2183 A5 0C    LDA &0C
 2185 85 09    STA &09
-2187 A1 00    LDA (&00,X)       ; Drawing a tile??
+2187 A1 00    LDA (&00,X)       ; Read a screen byte
 2189 91 97    STA (&97),Y
-218B B1 02    LDA (&02),Y
+218B B1 02    LDA (&02),Y       ; Read a tile data byte
 218D A6 21    LDX &21
 218F 30 0C    BMI &219D         ; When in game this is BMI &119D, heh
-2191 F0 04    BEQ &2197         ; If 0, don't shift and go straight to mask #&0F, not sure why?
+2191 F0 04    BEQ &2197         ; If X=0, don't shift and go straight to mask #&0F
 2193 4A       LSR A
 2194 4A       LSR A
 2195 4A       LSR A
@@ -1081,9 +1081,9 @@
 2199 AA       TAX               ; ...  and use as index
 219A BD FF FF LDA &FFFF,X       ; Self-modified to point somewhere like &26D4
 219D A2 00    LDX #&00
-219F C9 C0    CMP #&C0
-21A1 F0 15    BEQ &21B8
-21A3 85 7B    STA &7B
+219F C9 C0    CMP #&C0          ; Last entry?
+21A1 F0 15    BEQ &21B8         ; If so, jump to &21B8
+21A3 85 7B    STA &7B           ; Store the retrieved table value at &7B
 21A5 29 AA    AND #&AA          ; Mask with %1010'1010
 21A7 C9 80    CMP #&80
 21A9 F0 24    BEQ &21CF         ; If &80, jump to &21CF
@@ -1116,18 +1116,18 @@
 21E0 E6 03    INC &03           ;  Increment &03
 21E2 C6 0A    DEC &0A           ; Decrement &0A
 21E4 F0 1D    BEQ &2203         ; Skip to &2203 if &0A is 0
-21E6 E6 00    INC &00
+21E6 E6 00    INC &00           ; Move pointer at (&00/&01) to next screen byte
 21E8 C6 09    DEC &09           ; Decrement &09
 21EA D0 9B    BNE &2187         ; If not 0, loop back round
 21EC 18       CLC
 21ED A5 06    LDA &06
-21EF 69 08    ADC #&08
+21EF 69 08    ADC #&08          ; Base pointer at &06/&07, so we add 8 on...
 21F1 85 00    STA &00
-21F3 A5 07    LDA &07
+21F3 A5 07    LDA &07           
 21F5 69 00    ADC #&00
-21F7 85 01    STA &01           ; 16 bit addition of 8 to &06/&07 , store to &00/&01
-21F9 E6 04    INC &04
-21FB C6 08    DEC &08           ; Decrement &08
+21F7 85 01    STA &01           ; ...and store to &00/&01
+21F9 E6 04    INC &04           ; Inc &04 - not sure what this is
+21FB C6 08    DEC &08           ; Dec &08 - not sure what this is? loop count?
 21FD F0 03    BEQ &2202         ; Exit if 0
 21FF 4C 72 11 JMP &1172         ; Jump back round (&2172 here)
 2202 60       RTS               ; Exit
@@ -2027,7 +2027,7 @@
 28A5 98       TYA
 28A6 48       PHA
 28A7 20 2E 16 JSR &162E
-28AA A9 11    LDA #&11
+28AA A9 11    LDA #&11          ; Draw lantern
 28AC 20 AE 1F JSR &1FAE
 28AF 20 16 1D JSR &1D16
 28B2 68       PLA
@@ -2106,7 +2106,7 @@
 2936 A5 0D    LDA &0D
 2938 85 04    STA &04
 293A A9 12    LDA #&12
-293C 20 AE 1F JSR &1FAE
+293C 20 AE 1F JSR &1FAE         ; Draw "collected" lantern
 293F 20 5A 1B JSR &1B5A
 2942 20 C2 18 JSR &18C2
 2945 E6 30    INC &30
@@ -2335,12 +2335,12 @@
 2B10 4A       LSR A
 2B11 18       CLC
 2B12 69 14    ADC #&14
-2B14 20 AE 1F JSR &1FAE
+2B14 20 AE 1F JSR &1FAE         ; Draw tile?
 2B17 68       PLA
 2B18 29 0F    AND #&0F
 2B1A 18       CLC
 2B1B 69 14    ADC #&14
-2B1D 20 AE 1F JSR &1FAE
+2B1D 20 AE 1F JSR &1FAE         ; Draw tile?
 2B20 60       RTS
 2B21 A5 97    LDA &97
 2B23 85 02    STA &02
@@ -2558,7 +2558,7 @@
 2CB5 C9 F0    CMP #&F0
 2CB7 F0 05    BEQ &2CBE
 2CB9 A5 1C    LDA &1C
-2CBB 20 AE 1F JSR &1FAE
+2CBB 20 AE 1F JSR &1FAE         ; Draw tile
 2CBE 20 16 1D JSR &1D16
 2CC1 A5 1E    LDA &1E
 2CC3 C9 F3    CMP #&F3
@@ -2967,7 +2967,7 @@
 2FA9 01 05    ORA (&05,X)
 2FAB D2 16    CMP (16)
 2FAD 00       BRK
-2FAE 85 7B    STA &7B           ; Start of a widely used routine
+2FAE 85 7B    STA &7B           ; *** Draw object function ***
 2FB0 AA       TAX               ; X = A
 2FB1 0A       ASL A
 2FB2 0A       ASL A             ; A *= 4
@@ -2984,38 +2984,38 @@
 2FC5 A5 7C    LDA &7C
 2FC7 69 28    ADC #&28
 2FC9 85 7C    STA &7C
-2FCB B1 7B    LDA (&7B),Y
+2FCB B1 7B    LDA (&7B),Y       ; Get byte 1
 2FCD C8       INY
 2FCE 85 02    STA &02
-2FD0 B1 7B    LDA (&7B),Y
+2FD0 B1 7B    LDA (&7B),Y       ; Get byte 2
 2FD2 C8       INY
-2FD3 85 03    STA &03
-2FD5 B1 7B    LDA (&7B),Y
+2FD3 85 03    STA &03           ; Store byte 1/2 at &02/&03 ready for indirect lookup
+2FD5 B1 7B    LDA (&7B),Y       ; Get byte 3
 2FD7 C8       INY
-2FD8 85 0B    STA &0B
+2FD8 85 0B    STA &0B           ; Store at &08 and &0B
 2FDA 85 08    STA &08
-2FDC B1 7B    LDA (&7B),Y
+2FDC B1 7B    LDA (&7B),Y       ; Get byte 4
 2FDE C8       INY
-2FDF 85 0C    STA &0C
-2FE1 B1 7B    LDA (&7B),Y
-2FE3 85 21    STA &21
+2FDF 85 0C    STA &0C           ; Store at &0C
+2FE1 B1 7B    LDA (&7B),Y       ; Get byte 5 (= palette/pixel lookup)
+2FE3 85 21    STA &21           ; and store at &21
 2FE5 A5 97    LDA &97
 2FE7 48       PHA               ; Save &97 on stack
 2FE8 A5 98    LDA &98
 2FEA 48       PHA               ; Save &98 on stack
 2FEB A9 80    LDA #&80
 2FED 85 98    STA &98           ; ?&98=&80
-2FEF E0 0D    CPX #&0D
+2FEF E0 0D    CPX #&0D          ; Waterfall
 2FF1 F0 0A    BEQ &2FFD
-2FF3 E0 30    CPX #&30          ; If X is &0D or &30, skip to &2FFD
+2FF3 E0 30    CPX #&30          ; Smokebelch
 2FF5 F0 06    BEQ &2FFD
-2FF7 20 41 11 JSR &1141         ; Draw screen?
-2FFA 4C 00 20 JMP &2000         ; Skip the following JSR
-2FFD 20 6B 11 JSR &116B
+2FF7 20 41 11 JSR &1141         ; Draw tile routine A?
+2FFA 4C 00 20 JMP &2000         ; Skip the alternative routine
+2FFD 20 6B 11 JSR &116B         ; Draw tile routine B (for waterfall and smokebelch)
 3000 68       PLA               ; Pull into A
 3001 85 98    STA &98           ; Store at &98
 3003 68       PLA               ; Pull into A
-3004 85 97    STA &97           ; Store int &97
+3004 85 97    STA &97           ; Store at &97
 3006 60       RTS               ; Return
 3007 20 FD 15 JSR &15FD
 300A A0 00    LDY #&00
@@ -4003,16 +4003,16 @@
 36B0 E5 FF    SBC &FF
 36B2 33       ???
 36B3 FF       ???
-36B4 C4 26    CPY &26
-36B6 D4 26    ??? &26
-36B8 E4 26    CPX &26
-36BA F4 26    ??? &26
+36B4 C4 26    CPY &26           ; &26C4
+36B6 D4 26    ??? &26           ; &26D4  ;
+36B8 E4 26    CPX &26           ; &26E4  ; Some sort of palette look-up
+36BA F4 26    ??? &26           ; &26F4
 36BC F8       SED
 36BD 26 FC    ROL &FC
 36BF 26 00    ROL &00
 36C1 27       ???
 36C2 04 27    TSB &27
-36C4 00       BRK
+36C4 00       BRK               ; Palette 1 (16 bytes)
 36C5 01 02    ORA (&02,X)
 36C7 03       ???
 36C8 15 40    ORA 40,X
@@ -4024,7 +4024,7 @@
 36D0 3F       ???
 36D1 6A       ROR A
 36D2 95 C0    STA C0,X
-36D4 00       BRK
+36D4 00       BRK               ; Palette 2 (16 bytes)
 36D5 10 20    BPL &36F7
 36D7 30 04    BMI &36DD
 36D9 40       RTI
@@ -4033,7 +4033,8 @@
 36DD 18       CLC
 36DE 80 90    BRA &3670
 36E0 0C 48 84 TSB &8448
-36E3 C0 00    CPY #&00
+36E3 C0       ???
+36E4 00       BRK               ; Palette 3 (16 bytes)
 36E5 01 02    ORA (&02,X)
 36E7 03       ???
 36E8 05 40    ORA &40
@@ -4045,7 +4046,7 @@
 36F0 0F       ???
 36F1 4A       LSR A
 36F2 85 C0    STA &C0
-36F4 00       BRK
+36F4 00       BRK               ; Palette 4 (16 bytes)
 36F5 41 82    EOR (&82,X)
 36F7 C3       ???
 36F8 00       BRK
@@ -4063,7 +4064,7 @@
 370D FE 80 D4 INC &D480,X
 3710 FF       ???
 3711 EA       NOP
-3712 D5 C0    CMP C0,X
+3712 D5 C0    CMP C0,X          ; End palette
 3714 3E 27 3E ROL &3E27,X
 3717 27       ???
 3718 3E 27 2C ROL &2C27,X
@@ -4230,10 +4231,11 @@
 3848 00       BRK
 3849 00       BRK
 384A 00       BRK
-384B 27       ???
-384C 32 03    AND (03)
-384E 0A       ASL A
-384F 00       BRK
+384B 27       ???               ; Tile data, 5 bytes each.  First 2 point to tile data
+384C 32       ???               ; i.e. &3227 -> 3227 .. 3243 (28 bytes?)
+384D 03       ???               ; ?
+384E 0A       ASL A             ; ?
+384F 00       BRK               ; palette/pixel entry?
 3850 45 32    EOR &32
 3852 04 06    TSB &06
 3854 02       ???
@@ -4248,7 +4250,7 @@
 3863 0C 45 32 TSB &3245
 3866 04 06    TSB &06
 3868 02       ???
-3869 5D 32 04 EOR &0432,X
+3869 5D 32 04 EOR &0432,X       ; &325D
 386C 02       ???
 386D 00       BRK
 386E 69 32    ADC #&32
