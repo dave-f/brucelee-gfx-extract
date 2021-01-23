@@ -1,5 +1,5 @@
 1900 20 3A 1F JSR &1F3A
-1903 4C 55 09 JMP &0955
+1903 4C 55 09 JMP &0955         ; Called when space hit to start game
 1906 A2 00    LDX #&00
 1908 9A       TXS
 1909 86 22    STX &22
@@ -467,7 +467,7 @@
 1CAC 85 86    STA &86
 1CAE A5 8F    LDA &8F
 1CB0 D0 38    BNE &1CEA
-1CB2 A9 05    LDA #&05
+1CB2 A9 05    LDA #&05          ; Check keys ----
 1CB4 20 EB 0B JSR &0BEB
 1CB7 F0 66    BEQ &1D1F
 1CB9 A9 04    LDA #&04
@@ -496,7 +496,7 @@
 1CEF D0 03    BNE &1CF4
 1CF1 4C 20 0B JMP &0B20
 1CF4 A9 01    LDA #&01
-1CF6 20 EB 0B JSR &0BEB
+1CF6 20 EB 0B JSR &0BEB         ; --- End check keys
 1CF9 D0 03    BNE &1CFE
 1CFB 4C 22 0D JMP &0D22
 1CFE 4C 05 0D JMP &0D05
@@ -1084,41 +1084,41 @@
 219F C9 C0    CMP #&C0
 21A1 F0 15    BEQ &21B8
 21A3 85 7B    STA &7B
-21A5 29 AA    AND #&AA
+21A5 29 AA    AND #&AA          ; Mask with %1010'1010
 21A7 C9 80    CMP #&80
-21A9 F0 24    BEQ &21CF
-21AB A5 7B    LDA &7B
-21AD 29 55    AND #&55
-21AF C9 40    CMP #&40
+21A9 F0 24    BEQ &21CF         ; If &80, jump to &21CF
+21AB A5 7B    LDA &7B           ; Load &7B
+21AD 29 55    AND #&55          ; Mask with %0101'0101
+21AF C9 40    CMP #&40          ; If &40, jump to &21C1
 21B1 F0 0E    BEQ &21C1
-21B3 A5 7B    LDA &7B
-21B5 4C DB 11 JMP &11DB
+21B3 A5 7B    LDA &7B           ; Load &7B
+21B5 4C DB 11 JMP &11DB         ; Jump straight to store at &21DB
 21B8 A1 00    LDA (&00,X)
-21BA 4C DB 11 JMP &11DB
+21BA 4C DB 11 JMP &11DB         ; Jump straight to store at &21DB
 21BD C9 80    CMP #&80
 21BF B0 0E    BCS &21CF
-21C1 A5 7B    LDA &7B
-21C3 29 AA    AND #&AA
-21C5 85 7B    STA &7B
-21C7 A1 00    LDA (&00,X)
-21C9 29 55    AND #&55          ; Some sort of tile data?
-21CB 05 7B    ORA &7B
-21CD D0 0C    BNE &21DB
-21CF A5 7B    LDA &7B
-21D1 29 55    AND #&55
-21D3 85 7B    STA &7B
-21D5 A1 00    LDA (&00,X)       ; Load from screen?
-21D7 29 AA    AND #&AA
-21D9 05 7B    ORA &7B
-21DB 81 00    STA (&00,X)       ; Plot to screen
+21C1 A5 7B    LDA &7B           ; Load &7B
+21C3 29 AA    AND #&AA          ; Mask with %1010'1010
+21C5 85 7B    STA &7B           ; Store back at &7B
+21C7 A1 00    LDA (&00,X)       ; Load a byte from screen
+21C9 29 55    AND #&55          ; Mask with %0101'0101
+21CB 05 7B    ORA &7B           ; OR with &7B
+21CD D0 0C    BNE &21DB         ; If not 0, skip following block..
+21CF A5 7B    LDA &7B           ;  Load &7B
+21D1 29 55    AND #&55          ;  Mask wtih %0101'0101
+21D3 85 7B    STA &7B           ;  Store back at &7B
+21D5 A1 00    LDA (&00,X)       ;  Load a byte from screen
+21D7 29 AA    AND #&AA          ;  Mask with %1010'1010
+21D9 05 7B    ORA &7B           ;  OR with &7B
+21DB 81 00    STA (&00,X)       ; Store back to screen
 21DD C8       INY
-21DE D0 02    BNE &21E2
-21E0 E6 03    INC &03
-21E2 C6 0A    DEC &0A
-21E4 F0 1D    BEQ &2203
+21DE D0 02    BNE &21E2         ; If Y isn't 0, skip following block..
+21E0 E6 03    INC &03           ;  Increment &03
+21E2 C6 0A    DEC &0A           ; Decrement &0A
+21E4 F0 1D    BEQ &2203         ; Skip to &2203 if &0A is 0
 21E6 E6 00    INC &00
-21E8 C6 09    DEC &09
-21EA D0 9B    BNE &2187
+21E8 C6 09    DEC &09           ; Decrement &09
+21EA D0 9B    BNE &2187         ; If not 0, loop back round
 21EC 18       CLC
 21ED A5 06    LDA &06
 21EF 69 08    ADC #&08
@@ -1817,13 +1817,13 @@
 2701 08       PHP
 2702 0E       ???
 2703 7E       ???
-2704 A9 39    LDA #&39          ; Clear screen to value %1000'0000
+2704 A9 39    LDA #&39          ; Clear screen with value %1000'0000 - &80
 2706 85 7C    STA &7C
 2708 A9 80    LDA #&80
 270A 85 7B    STA &7B
 270C A2 47    LDX #&47
 270E A0 80    LDY #&80
-2710 91 7B    STA (&7B),Y
+2710 91 7B    STA (&7B),Y       ; Write to screen
 2712 C8       INY
 2713 D0 FB    BNE &2710
 2715 E6 7C    INC &7C
@@ -2913,8 +2913,8 @@
 2F43 85 11    STA &11
 2F45 85 29    STA &29
 2F47 20 05 11 JSR &1105         ; Set up some sort of table at &80
-2F4A 20 68 1D JSR &1D68
-2F4D 20 55 09 JSR &0955
+2F4A 20 68 1D JSR &1D68         ; Disable player maybe?
+2F4D 20 55 09 JSR &0955         ; Think this draws the screen
 2F50 A9 00    LDA #&00          ; Demo mode loop
 2F52 85 28    STA &28
 2F54 20 75 09 JSR &0975         ; Handle palette change effects
@@ -2967,10 +2967,10 @@
 2FA9 01 05    ORA (&05,X)
 2FAB D2 16    CMP (16)
 2FAD 00       BRK
-2FAE 85 7B    STA &7B
-2FB0 AA       TAX
+2FAE 85 7B    STA &7B           ; Start of a widely used routine
+2FB0 AA       TAX               ; X = A
 2FB1 0A       ASL A
-2FB2 0A       ASL A
+2FB2 0A       ASL A             ; A *= 4
 2FB3 18       CLC
 2FB4 65 7B    ADC &7B
 2FB6 85 7B    STA &7B
@@ -3000,23 +3000,23 @@
 2FE1 B1 7B    LDA (&7B),Y
 2FE3 85 21    STA &21
 2FE5 A5 97    LDA &97
-2FE7 48       PHA
+2FE7 48       PHA               ; Save &97 on stack
 2FE8 A5 98    LDA &98
-2FEA 48       PHA
+2FEA 48       PHA               ; Save &98 on stack
 2FEB A9 80    LDA #&80
-2FED 85 98    STA &98
+2FED 85 98    STA &98           ; ?&98=&80
 2FEF E0 0D    CPX #&0D
 2FF1 F0 0A    BEQ &2FFD
-2FF3 E0 30    CPX #&30
+2FF3 E0 30    CPX #&30          ; If X is &0D or &30, skip to &2FFD
 2FF5 F0 06    BEQ &2FFD
-2FF7 20 41 11 JSR &1141
-2FFA 4C 00 20 JMP &2000         ; Skip the following JSR ...
-2FFD 20 6B 11 JSR &116B         ; ... which is &1FFD in-game
-3000 68       PLA
-3001 85 98    STA &98
-3003 68       PLA
-3004 85 97    STA &97
-3006 60       RTS
+2FF7 20 41 11 JSR &1141         ; Draw screen?
+2FFA 4C 00 20 JMP &2000         ; Skip the following JSR
+2FFD 20 6B 11 JSR &116B
+3000 68       PLA               ; Pull into A
+3001 85 98    STA &98           ; Store at &98
+3003 68       PLA               ; Pull into A
+3004 85 97    STA &97           ; Store int &97
+3006 60       RTS               ; Return
 3007 20 FD 15 JSR &15FD
 300A A0 00    LDY #&00
 300C B1 7B    LDA (&7B),Y
@@ -7468,7 +7468,7 @@
 4BD4 A9 08    LDA #&08
 4BD6 A2 EE    LDX #&EE
 4BD8 A0 4B    LDY #&4B
-4BDA 20 F1 FF JSR &FFF1
+4BDA 20 F1 FF JSR &FFF1         ; OSWORD 8 - Define sound envelope
 4BDD 4C 00 09 JMP &0900
 4BE0 7F       ???
 4BE1 50 62    BVC &4C45
