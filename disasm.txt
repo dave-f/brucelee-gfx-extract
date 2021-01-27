@@ -1038,12 +1038,12 @@
 2143 29 FE    AND #&FE          ; Mask off LSB
 2145 AA       TAX
 2146 BD B4 26 LDA &26B4,X
-2149 8D 9B 11 STA &119B        ; Self modify the LDA below
+2149 8D 9B 11 STA &119B         ; Self modify the LDA below
 214C BD B5 26 LDA &26B5,X
-214F 8D 9C 11 STA &119C        ; Self modify the LDA below
+214F 8D 9C 11 STA &119C         ; Self modify the LDA below
 2152 A5 21    LDA &21
-2154 29 01    AND #&01         ; Leave only LSB
-2156 4C 6D 11 JMP &116D        ; and jump to 116D..
+2154 29 01    AND #&01          ; Leave only LSB
+2156 4C 6D 11 JMP &116D         ; and jump to 116D, ready to store LSB at &21
 2159 A2 00    LDX #&00
 215B A0 00    LDY #&00
 215D A5 00    LDA &00
@@ -1056,7 +1056,7 @@
 216A 60       RTS
 216B A9 FF    LDA #&FF          ; Entry point for waterfall and smokebelch (I think)
 216D 85 21    STA &21           ; .. store 255 at &21
-216F 20 59 11 JSR &1159
+216F 20 59 11 JSR &1159         ; Set X/Y to 0, &0A = &00 & %111, &7C = (8-&0A)
 2172 A5 00    LDA &00           ; Save a copy of the top of this character
 2174 85 06    STA &06           ; (screen address, eg. &4E00, &4E08..), from
 2176 A5 01    LDA &01           ; its work pointers at &00/&01 to &06/&07
@@ -1079,8 +1079,8 @@
 2196 4A       LSR A             ; Rotate right four times
 2197 29 0F    AND #&0F          ; Mask off top 4 bits..
 2199 AA       TAX               ; ...  and use as index
-219A BD FF FF LDA &FFFF,X       ; Self-modified to point somewhere like &26D4
-219D A2 00    LDX #&00
+219A BD FF FF LDA &FFFF,X       ; Self-modified to point somewhere like &26D4,
+219D A2 00    LDX #&00          ; but this contains a graphics byte
 219F C9 C0    CMP #&C0          ; Last entry?
 21A1 F0 15    BEQ &21B8         ; If so, jump to &21B8
 21A3 85 7B    STA &7B           ; Store the retrieved table value at &7B
@@ -1104,7 +1104,7 @@
 21C9 29 55    AND #&55          ; Mask with %0101'0101
 21CB 05 7B    ORA &7B           ; OR with &7B
 21CD D0 0C    BNE &21DB         ; If not 0, skip following block..
-21CF A5 7B    LDA &7B           ;  Load &7B
+21CF A5 7B    LDA &7B           ;  Load &7B (original table entry)
 21D1 29 55    AND #&55          ;  Mask wtih %0101'0101
 21D3 85 7B    STA &7B           ;  Store back at &7B
 21D5 A1 00    LDA (&00,X)       ;  Load a byte from screen
@@ -1112,7 +1112,7 @@
 21D9 05 7B    ORA &7B           ;  OR with &7B
 21DB 81 00    STA (&00,X)       ; Store back to screen
 21DD C8       INY
-21DE D0 02    BNE &21E2         ; If Y isn't 0, skip following block..
+21DE D0 02    BNE &21E2         ; If Y isn't 0, skip following instruction
 21E0 E6 03    INC &03           ;  Increment &03
 21E2 C6 0A    DEC &0A           ; Decrement &0A
 21E4 F0 1D    BEQ &2203         ; Skip to &2203 if &0A is 0
@@ -1699,7 +1699,7 @@
 2629 69 00    ADC #&00
 262B 85 7C    STA &7C
 262D 60       RTS
-262E A5 0D    LDA &0D
+262E A5 0D    LDA &0D           ; Anoher often-used routine
 2630 C9 A0    CMP #&A0
 2632 90 22    BCC &2656
 2634 A9 00    LDA #&00
@@ -2972,17 +2972,17 @@
 2FB1 0A       ASL A
 2FB2 0A       ASL A             ; A *= 4
 2FB3 18       CLC
-2FB4 65 7B    ADC &7B
-2FB6 85 7B    STA &7B
-2FB8 A9 00    LDA #&00
-2FBA A8       TAY
+2FB4 65 7B    ADC &7B           ; A *= 5
+2FB6 85 7B    STA &7B           ; Store back at &7B
+2FB8 A9 00    LDA #&00          ; A=0
+2FBA A8       TAY               ; Y=0
 2FBB 69 00    ADC #&00
 2FBD 85 7C    STA &7C
 2FBF A5 7B    LDA &7B
 2FC1 69 46    ADC #&46
 2FC3 85 7B    STA &7B
 2FC5 A5 7C    LDA &7C
-2FC7 69 28    ADC #&28
+2FC7 69 28    ADC #&28          ; Base table at &2846 (&3846 in this disassembly)
 2FC9 85 7C    STA &7C
 2FCB B1 7B    LDA (&7B),Y       ; Get byte 1
 2FCD C8       INY
@@ -2997,7 +2997,7 @@
 2FDC B1 7B    LDA (&7B),Y       ; Get byte 4
 2FDE C8       INY
 2FDF 85 0C    STA &0C           ; Store at &0C
-2FE1 B1 7B    LDA (&7B),Y       ; Get byte 5 (= palette/pixel lookup)
+2FE1 B1 7B    LDA (&7B),Y       ; Get byte 5 (not sure what this is, is 0 on brick, 1 on hippo)
 2FE3 85 21    STA &21           ; and store at &21
 2FE5 A5 97    LDA &97
 2FE7 48       PHA               ; Save &97 on stack
@@ -4003,15 +4003,15 @@
 36B0 E5 FF    SBC &FF
 36B2 33       ???
 36B3 FF       ???
-36B4 C4 26    CPY &26           ; &26C4
-36B6 D4 26    ??? &26           ; &26D4  ;
-36B8 E4 26    CPX &26           ; &26E4  ; Some sort of palette look-up
-36BA F4 26    ??? &26           ; &26F4
-36BC F8       SED
-36BD 26 FC    ROL &FC
-36BF 26 00    ROL &00
-36C1 27       ???
-36C2 04 27    TSB &27
+36B4 C4 26    CPY &26           ; &26C4 16 bytes
+36B6 D4 26    ??? &26           ; &26D4 16 bytes
+36B8 E4 26    CPX &26           ; &26E4 16 bytes 
+36BA F4 26    ??? &26           ; &26F4 4 bytes
+36BC F8       SED               ; &26F8 4 bytes
+36BD 26 FC    ROL &FC           ; &26FC 4 bytes
+36BF 26 00    ROL &00           ; &2700 4 bytes
+36C1 27       ???               ; &2704 4 bytes
+36C2 04 27    TSB &27           ; 
 36C4 00       BRK               ; Palette 1 (16 bytes)
 36C5 01 02    ORA (&02,X)
 36C7 03       ???
@@ -4046,25 +4046,25 @@
 36F0 0F       ???
 36F1 4A       LSR A
 36F2 85 C0    STA &C0
-36F4 00       BRK               ; Palette 4 (16 bytes)
+36F4 00       BRK               ; &36F4 &00 &41 &82 &C3
 36F5 41 82    EOR (&82,X)
 36F7 C3       ???
-36F8 00       BRK
+36F8 00       BRK               ; &36F8 &00 &51 &A2 &F3
 36F9 51 A2    EOR (&A2),Y
 36FB F3       ???
-36FC 00       BRK
+36FC 00       BRK               ; &36FC &00 &54 &A8 &FC
 36FD 54 A8    ??? &A8
-36FF FC 00 55 ??? &5500
+36FF FC 00 55 ??? &5500         ; &3700 &00 &55 &AA &FF
 3702 AA       TAX
 3703 FF       ???
-3704 00       BRK
+3704 00       BRK               ; &3704 &00 &54 &A8 &FC
 3705 54 A8    ??? &A8
 3707 FC 55 40 ??? &4055
 370A FD E8 AA SBC &AAE8,X
 370D FE 80 D4 INC &D480,X
 3710 FF       ???
 3711 EA       NOP
-3712 D5 C0    CMP C0,X          ; End palette
+3712 D5 C0    CMP C0,X
 3714 3E 27 3E ROL &3E27,X
 3717 27       ???
 3718 3E 27 2C ROL &2C27,X
@@ -4226,22 +4226,22 @@
 3841 04 61    TSB &61
 3843 21 09    AND (&09,X)
 3845 FF       ???
-3846 00       BRK
-3847 00       BRK
-3848 00       BRK
-3849 00       BRK
-384A 00       BRK
-384B 27       ???               ; Tile data, 5 bytes each.  First 2 point to tile data
-384C 32       ???               ; i.e. &3227 -> 3227 .. 3243 (28 bytes?)
-384D 03       ???               ; ?
-384E 0A       ASL A             ; ?
-384F 00       BRK               ; palette/pixel entry?
+3846 00       BRK               ; Brick /Blue girder /red girder? / more girder
+3847 00       BRK               ; white girder?
+3848 00       BRK               ; 8 = ladders... &0d = waterfall &0f = long nunchuck type things
+3849 00       BRK               ; &10 = green statue, &11 = lantern
+384A 00       BRK               ; &14 = 0.. 9 = &1D.. &20 hippo
+384B 27       ???               ; --- Object data, 5 bytes each.  First: Brick
+384C 32       ???               ; First two are LSB/MSB e.g. &3227 here, but this is same as hippo,
+384D 03       ???               ; so cannot point to raw pixel data.
+384E 0A       ASL A             ; &03 = width in bytes (i.e. 6 pixels), &0A heigh in rows (i.e. 10)
+384F 00       BRK               ; some sort of palette/pixel entry??
 3850 45 32    EOR &32
 3852 04 06    TSB &06
 3854 02       ???
 3855 45 32    EOR &32
-3857 04 06    TSB &06
-3859 08       PHP
+3857 04 06    TSB &06           ; So, for example, first byte of hippo data is at
+3859 08       PHP               ; &3846 (&2846) + (5*&20) = &38E6 (&28E6)
 385A 45 32    EOR &32
 385C 04 06    TSB &06
 385E 0A       ASL A
@@ -4334,8 +4334,8 @@
 38DF 08       PHP
 38E0 00       BRK
 38E1 ED 34 08 SBC &0834
-38E4 0C 00 27 TSB &2700
-38E7 32 0A    AND (0A)
+38E4 0C 00 27 TSB &2700         ; &38E6 = Hippo.. &3227 -> data, &0A = width (in bytes?), &18 = height (in rows)
+38E7 32 0A    AND (0A)          ;          i.e. Hippo is 20x24 at (&4227-&1900) = 10535 absolute file offset
 38E9 18       CLC
 38EA 01 D9    ORA (&D9,X)
 38EC 34 09    BIT 09,X
@@ -5800,8 +5800,8 @@
 4224 00       BRK
 4225 00       BRK
 4226 00       BRK
-4227 06 06    ASL &06
-4229 46 46    LSR &46
+4227 06 06    ASL &06           ; Used at least for Hippo, or brick, 10535 absolute offset in file,
+4229 46 46    LSR &46           ; Brick is 5x10, is Hippo data overlaid?!?
 422B 43       ???
 422C 0C 0C 0C TSB &0C0C
 422F 0C 03 0C TSB &0C03
