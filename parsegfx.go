@@ -4,8 +4,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-//	"strconv"
+	//"strconv"
 )
+
+func decodePixel(pixel byte) (l,r byte) {
+	l = ((pixel & 0b10) >> 1) | ((pixel & 0b1000) >> 2) | ((pixel & 0b100000) >> 3) | ((pixel & 0b10000000) >> 4)
+	r = ((pixel & 0b1) >> 0) | ((pixel & 0b100) >> 1) | ((pixel & 0b10000) >> 2) | ((pixel & 0b1000000) >> 3)
+	return
+}
+
+func printGraphicsObject(name string, b []byte, pixelTable []byte, w int, h int, flag bool) {
+	fmt.Println(name)
+	for i:= 0; i<len(b); i++ {
+		thisByte := b[i]
+		if (flag) {
+			thisByte >>= 4
+		}
+		thisByte &= 0xf
+		l,r := decodePixel(pixelTable[thisByte])
+		outputStr := fmt.Sprintf("%02x -> %02x / %02x", thisByte, l, r)
+		fmt.Println(outputStr)
+	}
+}
 
 func main() {
 
@@ -29,17 +49,26 @@ func main() {
 		return
 	}
 
-	var totalBytes = len(data)
-	fmt.Println(totalBytes, "total bytes")
+	//var totalBytes = len(data)
+	//fmt.Println(totalBytes, "total bytes")
 
+	// the graphics objects are in y order
+	printGraphicsObject("brick",data[10535:10535+(3*10)],data[7620:7620+16],3,10,false)
+	printGraphicsObject("hippo",data[10535:10535+(10*24)],data[7620:7620+16],10,24,true)
+
+	/*
 	ptr := 8006 // lookup table offset
-	
-	// todo add absolute file addresses
-	for i := 0; i < 59-50; i++ {
+
+	for i := 0; i < 59; i++ {
 		tableAddr := (uint16(data[ptr+1]) << 8) | uint16(data[ptr+0])
 		fileOffst := tableAddr + 4096 - 6400
 		outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Extra %02x", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4])
 		fmt.Println(outputStr)
 	    ptr += 5
 	}
+    */
+
+	// printing binary!
+	// dave := data[10535]
+	// fmt.Println(strconv.FormatInt(int64(dave), 2))
 }
