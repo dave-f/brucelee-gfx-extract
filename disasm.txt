@@ -1034,15 +1034,15 @@
 213B 85 7C    STA &7C
 213D A0 16    LDY #&16
 213F D0 E4    BNE &2125
-2141 A5 21    LDA &21           ; &21 = some sort of palette/tile flag?
-2143 29 FE    AND #&FE          ; Mask off LSB
+2141 A5 21    LDA &21           ; &21 = offset into pixel lookuptable
+2143 29 FE    AND #&FE          ; Mask off LSB, i.e. both hippo and brick are now 0!!
 2145 AA       TAX
 2146 BD B4 26 LDA &26B4,X
 2149 8D 9B 11 STA &119B         ; Self modify the LDA below
 214C BD B5 26 LDA &26B5,X
 214F 8D 9C 11 STA &119C         ; Self modify the LDA below
 2152 A5 21    LDA &21
-2154 29 01    AND #&01          ; Leave only LSB
+2154 29 01    AND #&01          ; Get the flag from earlier, this is where hippo and brick differ
 2156 4C 6D 11 JMP &116D         ; and jump to 116D, ready to store LSB at &21
 2159 A2 00    LDX #&00
 215B A0 00    LDY #&00
@@ -1055,7 +1055,7 @@
 2168 85 7C    STA &7C
 216A 60       RTS
 216B A9 FF    LDA #&FF          ; Entry point for waterfall and smokebelch (I think)
-216D 85 21    STA &21           ; .. store 255 at &21
+216D 85 21    STA &21           ; .. store either 1 or 255 at &21
 216F 20 59 11 JSR &1159         ; Set X/Y to 0, &0A = &00 & %111, &7C = (8-&0A)
 2172 A5 00    LDA &00           ; Save a copy of the top of this character
 2174 85 06    STA &06           ; (screen address, eg. &4E00, &4E08..), from
@@ -1084,9 +1084,9 @@
 219F C9 C0    CMP #&C0          ; Last entry?
 21A1 F0 15    BEQ &21B8         ; If so, jump to &21B8
 21A3 85 7B    STA &7B           ; Store the retrieved table value at &7B
-21A5 29 AA    AND #&AA          ; Mask with %1010'1010
+21A5 29 AA    AND #&AA          ; Mask with %1010'1010, i.e. get left pixel?
 21A7 C9 80    CMP #&80
-21A9 F0 24    BEQ &21CF         ; If &80, jump to &21CF
+21A9 F0 24    BEQ &21CF         ; If &80, jump to &21CF (skip left pixel..?)
 21AB A5 7B    LDA &7B           ; Load &7B
 21AD 29 55    AND #&55          ; Mask with %0101'0101
 21AF C9 40    CMP #&40          ; If &40, jump to &21C1
@@ -1105,7 +1105,7 @@
 21CB 05 7B    ORA &7B           ; OR with &7B
 21CD D0 0C    BNE &21DB         ; If not 0, skip following block..
 21CF A5 7B    LDA &7B           ;  Load &7B (original table entry)
-21D1 29 55    AND #&55          ;  Mask wtih %0101'0101
+21D1 29 55    AND #&55          ;  Mask wtih %0101'0101, i.e. get right pixel?
 21D3 85 7B    STA &7B           ;  Store back at &7B
 21D5 A1 00    LDA (&00,X)       ;  Load a byte from screen
 21D7 29 AA    AND #&AA          ;  Mask with %1010'1010
@@ -2997,7 +2997,7 @@
 2FDC B1 7B    LDA (&7B),Y       ; Get byte 4
 2FDE C8       INY
 2FDF 85 0C    STA &0C           ; Store at &0C
-2FE1 B1 7B    LDA (&7B),Y       ; Get byte 5 (not sure what this is, is 0 on brick, 1 on hippo)
+2FE1 B1 7B    LDA (&7B),Y       ; Get byte 5 (pixel lookup table I think; 0 on brick, 1 on hippo)
 2FE3 85 21    STA &21           ; and store at &21
 2FE5 A5 97    LDA &97
 2FE7 48       PHA               ; Save &97 on stack
@@ -4003,16 +4003,16 @@
 36B0 E5 FF    SBC &FF
 36B2 33       ???
 36B3 FF       ???
-36B4 C4 26    CPY &26           ; &26C4 16 bytes
-36B6 D4 26    ??? &26           ; &26D4 16 bytes
-36B8 E4 26    CPX &26           ; &26E4 16 bytes 
-36BA F4 26    ??? &26           ; &26F4 4 bytes
-36BC F8       SED               ; &26F8 4 bytes
-36BD 26 FC    ROL &FC           ; &26FC 4 bytes
-36BF 26 00    ROL &00           ; &2700 4 bytes
-36C1 27       ???               ; &2704 4 bytes
+36B4 C4 26    CPY &26           ; &26C4 Table 0 - 16 bytes
+36B6 D4 26    ??? &26           ; &26D4 Table 1 - 16 bytes
+36B8 E4 26    CPX &26           ; &26E4 Table 2 - 16 bytes
+36BA F4 26    ??? &26           ; &26F4 Table 3 - 4 bytes
+36BC F8       SED               ; &26F8 Table 4 - 4 bytes
+36BD 26 FC    ROL &FC           ; &26FC Table 5 - 4 bytes
+36BF 26 00    ROL &00           ; &2700 Table 6 - 4 bytes
+36C1 27       ???               ; &2704 Table 7 - 4 bytes
 36C2 04 27    TSB &27           ; 
-36C4 00       BRK               ; Palette 1 (16 bytes)
+36C4 00       BRK               ; Pixel values table 1 (16 bytes)
 36C5 01 02    ORA (&02,X)
 36C7 03       ???
 36C8 15 40    ORA 40,X
@@ -4024,7 +4024,7 @@
 36D0 3F       ???
 36D1 6A       ROR A
 36D2 95 C0    STA C0,X
-36D4 00       BRK               ; Palette 2 (16 bytes)
+36D4 00       BRK               ; Pixel values table 2 (16 bytes)
 36D5 10 20    BPL &36F7
 36D7 30 04    BMI &36DD
 36D9 40       RTI
@@ -4034,7 +4034,7 @@
 36DE 80 90    BRA &3670
 36E0 0C 48 84 TSB &8448
 36E3 C0       ???
-36E4 00       BRK               ; Palette 3 (16 bytes)
+36E4 00       BRK               ; Pixel values table 3 (16 bytes)
 36E5 01 02    ORA (&02,X)
 36E7 03       ???
 36E8 05 40    ORA &40
@@ -4235,7 +4235,7 @@
 384C 32       ???               ; First two are LSB/MSB e.g. &3227 here, but this is same as hippo,
 384D 03       ???               ; so cannot point to raw pixel data.
 384E 0A       ASL A             ; &03 = width in bytes (i.e. 6 pixels), &0A heigh in rows (i.e. 10)
-384F 00       BRK               ; some sort of palette/pixel entry??
+384F 00       BRK               ; some sort of palette/pixel entry, index into table at &36B4??
 3850 45 32    EOR &32
 3852 04 06    TSB &06
 3854 02       ???
