@@ -42,7 +42,7 @@ func decodePixel(pixel byte) (l,r byte) {
 
 // Create the BBC Micro colours
 func makeBBCMicroColours() {
-	coloursBBC = make([]color.RGBA,9) // the game seems to use colour 9 in the tables too
+	coloursBBC = make([]color.RGBA,16) // the game seems to use colour 9 in the tables too
 	coloursBBC[0] = color.RGBA{0x00, 0x00, 0x00, 0xff} // black
 	coloursBBC[1] = color.RGBA{0xff, 0x00, 0x00, 0xff} // red
 	coloursBBC[2] = color.RGBA{0x00, 0xff, 0x00, 0xff} // green
@@ -51,7 +51,14 @@ func makeBBCMicroColours() {
 	coloursBBC[5] = color.RGBA{0xff, 0x00, 0xff, 0xff} // magenta
 	coloursBBC[6] = color.RGBA{0x00, 0xff, 0xff, 0xff} // cyan
 	coloursBBC[7] = color.RGBA{0xff, 0xff, 0xff, 0xff} // White
-	coloursBBC[8] = color.RGBA{0x00, 0x00, 0x00, 0xff} // Last
+	coloursBBC[8] = color.RGBA{0x10, 0x10, 0x10, 0xff} // Last
+	coloursBBC[9] = color.RGBA{0x20, 0x20, 0x20, 0xff} // Last
+	coloursBBC[10] = color.RGBA{0x30, 0x30, 0x30, 0xff} // Last
+	coloursBBC[11] = color.RGBA{0x40, 0x40, 0x40, 0xff} // Last
+	coloursBBC[12] = color.RGBA{0x50, 0x50, 0x50, 0xff} // Last
+	coloursBBC[13] = color.RGBA{0x60, 0x60, 0x60, 0xff} // Last
+	coloursBBC[14] = color.RGBA{0x70, 0x70, 0x70, 0xff} // Last
+	coloursBBC[15] = color.RGBA{0x80, 0x80, 0x80, 0xff} // Last
 }
 
 func printGraphicsObject(name string, b []byte, pixelTable []byte, w int, h int, flag bool) {
@@ -83,13 +90,9 @@ func replaceGraphic(b []byte) {
 }
 
 func decodeGraphicToImage(i* image.RGBA, o VisualObject, x int, y int) {
-
-	fmt.Println("Decoding object ", o.widthInBytes, o.heightInRows)
-
-	offset := o.fileOffset
 	var h byte
 	var w byte
-	
+	offset := o.fileOffset
 	ourx := x
 	oury := y
 
@@ -178,15 +181,19 @@ func main() {
 			//outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
 			//fmt.Println(outputStr)
 			visualObjectMap[uint32(i)] = VisualObject {
-				fileOffst,data[ptr+2],data[ptr+3],data[ptr+4] & 0xfe, (data[ptr+4] & 1)==1,
+				fileOffst,data[ptr+2],data[ptr+3],(data[ptr+4] & 0xfe)>>1, (data[ptr+4] & 1)==1,
 			}
 		}
 	    ptr += 5
 	}
 
-	//for i, e := range visualObjectMap {
-	//fmt.Println(i,e)
-	//}
+	calcImageHeight := 0
+
+	for _, e := range visualObjectMap {
+		calcImageHeight += int(e.heightInRows)
+	}
+
+	fmt.Println("Total image height",calcImageHeight)
 
 	// as a test, replace hippo graphic with 0s
 	// for i:= 0; i<10*24; i++ {
@@ -203,7 +210,7 @@ func main() {
 
 	// Create an image in which to display our parsed graphics
 	const imageWidth = 640
-	const imageHeight = 480
+	imageHeight := calcImageHeight
 	black := color.RGBA{0, 0, 0, 0xff}
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{imageWidth,imageHeight}
@@ -217,7 +224,15 @@ func main() {
 	}
 
 	// Render the graphic into it
-	decodeGraphicToImage(img, visualObjectMap[32], 10, 10)
+	renderY := 0
+
+	for i := 1; i<len(visualObjectMap); i++ {
+		fmt.Println(i,"decoding to image:",visualObjectMap[uint32(i)])
+		if (i!=46) { // somthing wrong with this one
+			decodeGraphicToImage(img, visualObjectMap[uint32(i)], 0, renderY)
+			renderY += int(visualObjectMap[uint32(i)].heightInRows)
+		}
+	}
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
