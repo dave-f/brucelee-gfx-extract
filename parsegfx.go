@@ -63,6 +63,7 @@ func main() {
 	// the graphics objects are in y order
 	// printGraphicsObject("brick",data[10535:10535+(3*10)],data[7620:7620+16],3,10,false)
 	// printGraphicsObject("hippo",data[10535:10535+(10*24)],data[7620:7620+16],10,24,true)
+	// printGraphicsObject("lantern",17)
 
 	// 8 pixel lookup tables
 	pixTableOffs := 7620
@@ -81,7 +82,7 @@ func main() {
 		tableAddr := (uint16(data[ptr+1]) << 8) | uint16(data[ptr+0])
 		fileOffst := tableAddr + 4096 - 6400
 		if (i>0) {
-			outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Extra %02x", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4])
+			outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
 			fmt.Println(outputStr)
 		}
 	    ptr += 5
