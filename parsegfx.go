@@ -50,22 +50,22 @@ func decodePixel(pixel byte) (l,r byte) {
 // Create the BBC Micro colours
 func makeBBCMicroColours() {
 	coloursBBC = make([]color.RGBA,16)
-	coloursBBC[0] = color.RGBA{0x10, 0x10, 0x10, 0xff} // black
+	coloursBBC[0] = color.RGBA{0x00, 0x00, 0x00, 0xff} // black
 	coloursBBC[1] = color.RGBA{0xff, 0x00, 0x00, 0xff} // red
 	coloursBBC[2] = color.RGBA{0x00, 0xff, 0x00, 0xff} // green
 	coloursBBC[3] = color.RGBA{0xff, 0xff, 0x00, 0xff} // yellow
 	coloursBBC[4] = color.RGBA{0x00, 0x00, 0xff, 0xff} // blue
 	coloursBBC[5] = color.RGBA{0xff, 0x00, 0xff, 0xff} // magenta
 	coloursBBC[6] = color.RGBA{0x00, 0xff, 0xff, 0xff} // cyan
-	coloursBBC[7] = color.RGBA{0xff, 0xff, 0xff, 0xff} // White
-	coloursBBC[8] = color.RGBA{0x20, 0x20, 0x20, 0xff} // Last
-	coloursBBC[9] = color.RGBA{0x30, 0x30, 0x30, 0xff} // Last
-	coloursBBC[10] = color.RGBA{0x40, 0x40, 0x40, 0xff} // Last
-	coloursBBC[11] = color.RGBA{0x50, 0x50, 0x50, 0xff} // Last
-	coloursBBC[12] = color.RGBA{0x60, 0x60, 0x60, 0xff} // Last
-	coloursBBC[13] = color.RGBA{0x70, 0x70, 0x70, 0xff} // Last
-	coloursBBC[14] = color.RGBA{0x80, 0x80, 0x80, 0xff} // Last
-	coloursBBC[15] = color.RGBA{0x90, 0x90, 0x90, 0xff} // Last
+	coloursBBC[7] = color.RGBA{0xff, 0xff, 0xff, 0xff} // white
+	coloursBBC[8] = color.RGBA{0x20, 0x20, 0x20, 0xff} // black 1
+	coloursBBC[9] = color.RGBA{0x7f, 0x00, 0x00, 0xff} // red 1
+	coloursBBC[10] = color.RGBA{0x00, 0x7f, 0x00, 0xff} // green 1
+	coloursBBC[11] = color.RGBA{0x7f, 0x7f, 0x00, 0xff} // yellow 1
+	coloursBBC[12] = color.RGBA{0x00, 0x00, 0x7f, 0xff} // blue 1
+	coloursBBC[13] = color.RGBA{0x7f, 0x00, 0x7f, 0xff} // magenta 1
+	coloursBBC[14] = color.RGBA{0x00, 0x7f, 0x7f, 0xff} // cyan 1
+	coloursBBC[15] = color.RGBA{0x7f, 0x7f, 0x7f, 0xff} // white 1
 }
 
 func printGraphicsObject(name string, b []byte, pixelTable []byte, w int, h int, flag bool) {
@@ -90,9 +90,18 @@ func printPixelTable(b []byte) {
 	}
 }
 
-func replaceGraphic(b []byte) {
+func replaceGraphic(b []byte, upperNibble bool) {
 	for i:=0; i<len(b); i++ {
-		b[i] &= 0xf
+		originalByte := b[i]
+		if (upperNibble) {
+			originalByte &= 0x0f
+			originalByte |= 1<<4
+			b[i] = originalByte
+		} else {
+			originalByte &= 0xf
+			originalByte |= 1
+			b[i] = originalByte
+		}
 	}
 }
 
@@ -230,19 +239,6 @@ func main() {
 
 	fmt.Println("Total image height",calcImageHeight)
 
-	// as a test, replace hippo graphic with 0s
-	// for i:= 0; i<10*24; i++ {
-	//  data[10535+i] &= 0xf
-	// }
-	// or, do same job:
-	// replaceGraphic(data[10535:10535+(10*24)])
-
-	// err = ioutil.WriteFile("new/BRUCE1", data, 0777)
-
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-
 	// Create an image in which to display our parsed graphics
 	const imageWidth = 640
 	imageHeight := calcImageHeight
@@ -280,12 +276,22 @@ func main() {
 		if (i%5==0) {
 			renderNumberToImage(img,i,30,renderY)
 		}
+		fmt.Println(i, ":", visualObjectMap[uint32(i)])
 		renderY += int(visualObjectMap[uint32(i)].heightInRows)
 	}
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
 	png.Encode(pngFile, img)
+	defer pngFile.Close()
+
+	// For object 34, and probably more, the first one is used as a "disappearing" tile, in that the physical colour
+	// can be changed from 9 to 0, so the tile can easily be made to disappear
+	// replaceGraphic(data[visualObjectMap[34].fileOffset:visualObjectMap[34].fileOffset + uint16(visualObjectMap[34].widthInBytes * visualObjectMap[34].heightInRows)], false)
+	err = ioutil.WriteFile("new/BRUCE1", data, 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// printing binary!
 	// dave := data[10535]
