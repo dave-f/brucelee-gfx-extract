@@ -136,7 +136,6 @@ func decodeGraphicToImage(i* image.RGBA, o VisualObject, x int, y int) {
 }
 
 func renderNumberToImage(img *image.RGBA, number int, x int, y int) {
-
 	numString := strconv.Itoa(number)
 
 	curX := x
@@ -155,6 +154,17 @@ func renderNumberToImage(img *image.RGBA, number int, x int, y int) {
 		x+=4
 		curX=x
 		curY=y
+	}
+}
+
+func renderPalette(img *image.RGBA, x int, y int) {
+	for i:=0;i<8;i++ {
+		thisColour := coloursBBC[i]
+		img.Set(x+0,y+0,thisColour)
+		img.Set(x+1,y+0,thisColour)
+		img.Set(x+0,y+1,thisColour)
+		img.Set(x+1,y+1,thisColour)
+		x+=2
 	}
 }
 
@@ -279,6 +289,9 @@ func main() {
 		fmt.Println(i, ":", visualObjectMap[uint32(i)])
 		renderY += int(visualObjectMap[uint32(i)].heightInRows)
 	}
+
+	// Render palette
+	renderPalette(img,40,5)
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
