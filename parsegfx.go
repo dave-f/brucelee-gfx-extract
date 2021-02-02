@@ -13,6 +13,10 @@ import (
 	"strconv"
 )
 
+const TotalGraphicsObjects = 58
+const FontWidth = 3
+const FontHeight = 7
+
 // The entire file
 var data []byte
 
@@ -34,7 +38,7 @@ var pixelTables [][]byte
 var coloursBBC []color.RGBA
 
 // Define a simple 0-9 character set
-var numberImages []image.RGBA
+var numberImages [10][3][7]color.RGBA
 
 // Decode a byte into its 2 "left" and "right" pixels
 func decodePixel(pixel byte) (l,r byte) {
@@ -122,34 +126,41 @@ func decodeGraphicToImage(i* image.RGBA, o VisualObject, x int, y int) {
 	}
 }
 
-// TODO Test getting some numbers out, 0 is at 0,196 and 3,7 bounds
 func renderNumberToImage(img *image.RGBA, number int, x int, y int) {
 
-	fmt.Println(strconv.Itoa(number))
-	// for each character in this string, render the appropriate character
-	// and x+= 4 (each number is 3 pixels)
+	numString := strconv.Itoa(number)
 
-	//rectForZero := image.Rect(0,196,0+3,196+7)
-	//imgZero := img.SubImage(rectForZero)
-	//renderFontX := 10
-	//renderFontY := 10
+	curX := x
+	curY := y
 
-	//fmt.Println(rectForZero)
-	//fmt.Println("Bounds are ", imgZero.Bounds())
-
-	//for y := 0; y<7; y++ {
-	//	for x :=0; x<3; x++ {
-	//		img.Set(renderFontX,renderFontY,imgZero.At(x,y+196))
-	//		fmt.Println(imgZero.At(x,y))
-	//		renderFontX++
-	//	}
-	//	renderFontX=10
-	//	renderFontY++
-	//}
+	for i:=0;i<len(numString);i++ {
+		thisNumber,_ := strconv.Atoi(numString[i:i+1])
+		for y:=0;y<FontHeight;y++ {
+			for x:=0;x<FontWidth;x++ {
+				img.Set(curX,curY,numberImages[thisNumber][x][y])
+				curX++
+			}
+			curX=x
+			curY++
+		}
+		x+=4
+		curX=x
+		curY=y
+	}
 }
 
-// TODO Build the font images in `numberImages'
-func makeFont(i *image.RGBA, yOffset int) {
+func makeFont(srcImg *image.RGBA, yOffset int) {
+
+	curY := yOffset
+
+	for i:=0;i<10;i++ {
+		for y:=0;y<FontHeight;y++ {
+			for x:=0;x<FontWidth;x++ {
+				numberImages[i][x][y] = srcImg.RGBAAt(x,curY)
+			}
+			curY++
+		}
+	}
 }
 
 func main() {
@@ -178,7 +189,7 @@ func main() {
 
 	// Build the 8 pixel lookup tables
 	pixTableOffs := 7620
-	pixTableSize := []int{16,16,16,4,4,4,4,4}
+	pixTableSize := []int{16,16,16,4,4,4,4,16}
 	pixelTables = make([][]byte,8)
 
 	for i, e := range pixTableSize {
@@ -196,20 +207,20 @@ func main() {
 	//	fmt.Println(i,e)
 	//}
 
-	ptr := 8006 // lookup table offset
+	ptr := 8006 + 5 // lookup table offset, the first five bytes are all 0
 
-	for i := 0; i < 59; i++ {
+	for i := 0; i < TotalGraphicsObjects; i++ {
 		tableAddr := (uint16(data[ptr+1]) << 8) | uint16(data[ptr+0])
 		fileOffst := tableAddr + 4096 - 6400
-		if (i>0) {
-			//outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
-			//fmt.Println(outputStr)
-			visualObjectMap[uint32(i)] = VisualObject {
-				fileOffst,data[ptr+2],data[ptr+3],(data[ptr+4] & 0xfe)>>1, (data[ptr+4] & 1)==1,
-			}
+		//outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
+		//fmt.Println(outputStr)
+		visualObjectMap[uint32(i)] = VisualObject {
+			fileOffst,data[ptr+2],data[ptr+3],(data[ptr+4] & 0xfe)>>1, (data[ptr+4] & 1)==1,
 		}
 	    ptr += 5
 	}
+
+	fmt.Println("Total objects", len(visualObjectMap))
 
 	calcImageHeight := 0
 
@@ -251,23 +262,26 @@ func main() {
 	// Render the graphics in, and draw a little indicator at each one
 	renderY := 0
 
-	for i := 1; i<len(visualObjectMap); i++ {
-		// fmt.Println(i,"decoding to image:",visualObjectMap[uint32(i)])
-		if (i!=46) { // somthing wrong with this one
-			img.Set(24,renderY,grey)
-			img.Set(25,renderY,grey)
-			img.Set(26,renderY,grey)
-			img.Set(27,renderY,grey)
-			decodeGraphicToImage(img, visualObjectMap[uint32(i)], 0, renderY)
-			renderY += int(visualObjectMap[uint32(i)].heightInRows)
-		}
+	for i := 0; i<len(visualObjectMap); i++ {
+		img.Set(24,renderY,grey)
+		img.Set(25,renderY,grey)
+		img.Set(26,renderY,grey)
+		img.Set(27,renderY,grey)
+		decodeGraphicToImage(img, visualObjectMap[uint32(i)], 0, renderY)
+		renderY += int(visualObjectMap[uint32(i)].heightInRows)
 	}
 
-	// TODO Build the font
+	// This lets us build our 0-9 characters..
 	makeFont(img,196)
 
-	// TODO Every 5 numbers, draw the count
-	renderNumberToImage(img,0,28,0)
+	// ..so we can draw an ID every 5 objects
+	renderY = 0
+	for i := 0; i<len(visualObjectMap); i++ {
+		if (i%5==0) {
+			renderNumberToImage(img,i,30,renderY)
+		}
+		renderY += int(visualObjectMap[uint32(i)].heightInRows)
+	}
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
