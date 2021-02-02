@@ -168,6 +168,51 @@ func renderPalette(img *image.RGBA, x int, y int) {
 	}
 }
 
+func renderCharacters(img* image.RGBA, x int, y int) {
+	offsetBruce := 8301
+	offsetYamo := 9473
+
+	curX := x
+	curY := y
+
+	for x:=0; x<5; x++ {
+		for y:=0; y<26; y++ {
+			thisByte := data[offsetBruce]
+			l,r := decodePixel(thisByte)
+			pixelOne := coloursBBC[l]
+			pixelTwo := coloursBBC[r]
+			img.Set(curX,curY,pixelOne)
+			img.Set(curX+1,curY,pixelTwo)
+			curY++
+			offsetBruce++
+		}
+		curX += 2
+		curY = y
+	}
+
+	curX = x+12
+	curY = y
+
+	for x:=0; x<5; x++ {
+		for y:=0; y<26; y++ {
+			thisByte := data[offsetYamo]
+			l,r := decodePixel(thisByte)
+			pixelOne := coloursBBC[l]
+			pixelTwo := coloursBBC[r]
+			img.Set(curX,curY,pixelOne)
+			img.Set(curX+1,curY,pixelTwo)
+			curY++
+			offsetYamo++
+		}
+		curX += 2
+		curY = y
+	}
+		
+	// bruce left : 8301, width 10 height 26, y first [2 frames left, 1 stood, 2 climb, 1 punch] = 6 frames
+	// bruce jump : 9231, width 10 height 26, y first [1 frame]
+	// yamo : 9473, width 10, height 26 y first [2 frames left]
+}
+
 func makeFont(srcImg *image.RGBA, yOffset int) {
 
 	curY := yOffset
@@ -292,6 +337,9 @@ func main() {
 
 	// Render palette
 	renderPalette(img,40,5)
+
+	// And characters
+	renderCharacters(img,80,5)
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
