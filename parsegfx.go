@@ -5,28 +5,28 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"io/ioutil"
 	"os"
-	"image"
-	"image/png"
-	"image/color"
 	"strconv"
 )
 
-const TotalGraphicsObjects = 58
-const FontWidth = 3
-const FontHeight = 7
+const totalGraphicsObjects = 58
+const fontWidth = 3
+const fontHeight = 7
 
 // The entire file
 var data []byte
 
-// A map of all the visual objects
+// A map of all the visual objects.  TODO: Change this to an array rather than map
 type VisualObject struct {
-	fileOffset uint16
-	widthInBytes byte
-	heightInRows byte
+	fileOffset      uint16
+	widthInBytes    byte
+	heightInRows    byte
 	pixelTableIndex byte
-	maskFlag bool
+	maskFlag        bool
 }
 
 var visualObjectMap map[uint32]VisualObject
@@ -41,7 +41,7 @@ var coloursBBC []color.RGBA
 var numberImages [10][3][7]color.RGBA
 
 // Decode a byte into its 2 "left" and "right" pixels
-func decodePixel(pixel byte) (l,r byte) {
+func decodePixel(pixel byte) (l, r byte) {
 	l = ((pixel & 0b10) >> 1) | ((pixel & 0b1000) >> 2) | ((pixel & 0b100000) >> 3) | ((pixel & 0b10000000) >> 4)
 	r = ((pixel & 0b1) >> 0) | ((pixel & 0b100) >> 1) | ((pixel & 0b10000) >> 2) | ((pixel & 0b1000000) >> 3)
 	return
@@ -49,17 +49,17 @@ func decodePixel(pixel byte) (l,r byte) {
 
 // Create the BBC Micro colours
 func makeBBCMicroColours() {
-	coloursBBC = make([]color.RGBA,16)
-	coloursBBC[0] = color.RGBA{0x00, 0x00, 0x00, 0xff} // black
-	coloursBBC[1] = color.RGBA{0xff, 0x00, 0x00, 0xff} // red
-	coloursBBC[2] = color.RGBA{0x00, 0xff, 0x00, 0xff} // green
-	coloursBBC[3] = color.RGBA{0xff, 0xff, 0x00, 0xff} // yellow
-	coloursBBC[4] = color.RGBA{0x00, 0x00, 0xff, 0xff} // blue
-	coloursBBC[5] = color.RGBA{0xff, 0x00, 0xff, 0xff} // magenta
-	coloursBBC[6] = color.RGBA{0x00, 0xff, 0xff, 0xff} // cyan
-	coloursBBC[7] = color.RGBA{0xff, 0xff, 0xff, 0xff} // white
-	coloursBBC[8] = color.RGBA{0x20, 0x20, 0x20, 0xff} // black 1
-	coloursBBC[9] = color.RGBA{0x7f, 0x00, 0x00, 0xff} // red 1
+	coloursBBC = make([]color.RGBA, 16)
+	coloursBBC[0] = color.RGBA{0x00, 0x00, 0x00, 0xff}  // black
+	coloursBBC[1] = color.RGBA{0xff, 0x00, 0x00, 0xff}  // red
+	coloursBBC[2] = color.RGBA{0x00, 0xff, 0x00, 0xff}  // green
+	coloursBBC[3] = color.RGBA{0xff, 0xff, 0x00, 0xff}  // yellow
+	coloursBBC[4] = color.RGBA{0x00, 0x00, 0xff, 0xff}  // blue
+	coloursBBC[5] = color.RGBA{0xff, 0x00, 0xff, 0xff}  // magenta
+	coloursBBC[6] = color.RGBA{0x00, 0xff, 0xff, 0xff}  // cyan
+	coloursBBC[7] = color.RGBA{0xff, 0xff, 0xff, 0xff}  // white
+	coloursBBC[8] = color.RGBA{0x20, 0x20, 0x20, 0xff}  // black 1
+	coloursBBC[9] = color.RGBA{0x7f, 0x00, 0x00, 0xff}  // red 1
 	coloursBBC[10] = color.RGBA{0x00, 0x7f, 0x00, 0xff} // green 1
 	coloursBBC[11] = color.RGBA{0x7f, 0x7f, 0x00, 0xff} // yellow 1
 	coloursBBC[12] = color.RGBA{0x00, 0x00, 0x7f, 0xff} // blue 1
@@ -70,32 +70,32 @@ func makeBBCMicroColours() {
 
 func printGraphicsObject(name string, b []byte, pixelTable []byte, w int, h int, flag bool) {
 	fmt.Println(name)
-	for i:= 0; i<len(b); i++ {
+	for i := 0; i < len(b); i++ {
 		thisByte := b[i]
-		if (flag) {
+		if flag {
 			thisByte >>= 4
 		}
 		thisByte &= 0xf
-		l,r := decodePixel(pixelTable[thisByte])
+		l, r := decodePixel(pixelTable[thisByte])
 		outputStr := fmt.Sprintf("%02x -> %02x / %02x", thisByte, l, r)
 		fmt.Println(outputStr)
 	}
 }
 
 func printPixelTable(b []byte) {
-	for i := 0; i<len(b); i++ {
-		l,r := decodePixel(b[i])
+	for i := 0; i < len(b); i++ {
+		l, r := decodePixel(b[i])
 		outputStr := fmt.Sprintf("%02x -> %02x / %02x", i, l, r)
 		fmt.Println(outputStr)
 	}
 }
 
 func replaceGraphic(b []byte, upperNibble bool) {
-	for i:=0; i<len(b); i++ {
+	for i := 0; i < len(b); i++ {
 		originalByte := b[i]
-		if (upperNibble) {
+		if upperNibble {
 			originalByte &= 0x0f
-			originalByte |= 1<<4
+			originalByte |= 1 << 4
 			b[i] = originalByte
 		} else {
 			originalByte &= 0xf
@@ -105,7 +105,7 @@ func replaceGraphic(b []byte, upperNibble bool) {
 	}
 }
 
-func decodeGraphicToImage(i* image.RGBA, o VisualObject, x int, y int) {
+func decodeGraphicToImage(i *image.RGBA, o VisualObject, x int, y int) {
 	var h byte
 	var w byte
 	offset := o.fileOffset
@@ -115,14 +115,14 @@ func decodeGraphicToImage(i* image.RGBA, o VisualObject, x int, y int) {
 	for w = 0; w < o.widthInBytes; w++ {
 		for h = 0; h < o.heightInRows; h++ {
 			dataByte := data[offset]
-			if (o.maskFlag) {
+			if o.maskFlag || (o.fileOffset == 10343) { // not sure how the smokebelch colours work just yet
 				dataByte = dataByte >> 4
 			}
 
 			dataByte &= 0xf
 
 			actualPixelByte := pixelTables[o.pixelTableIndex][dataByte]
-			l,r := decodePixel(actualPixelByte)
+			l, r := decodePixel(actualPixelByte)
 
 			i.Set(ourx, oury, coloursBBC[l])
 			i.Set(ourx+1, oury, coloursBBC[r])
@@ -141,48 +141,73 @@ func renderNumberToImage(img *image.RGBA, number int, x int, y int) {
 	curX := x
 	curY := y
 
-	for i:=0;i<len(numString);i++ {
-		thisNumber,_ := strconv.Atoi(numString[i:i+1])
-		for y:=0;y<FontHeight;y++ {
-			for x:=0;x<FontWidth;x++ {
-				img.Set(curX,curY,numberImages[thisNumber][x][y])
+	for i := 0; i < len(numString); i++ {
+		thisNumber, _ := strconv.Atoi(numString[i : i+1])
+		for y := 0; y < fontHeight; y++ {
+			for x := 0; x < fontWidth; x++ {
+				img.Set(curX, curY, numberImages[thisNumber][x][y])
 				curX++
 			}
-			curX=x
+			curX = x
 			curY++
 		}
-		x+=4
-		curX=x
-		curY=y
+		x += 4
+		curX = x
+		curY = y
 	}
 }
 
 func renderPalette(img *image.RGBA, x int, y int) {
-	for i:=0;i<8;i++ {
+	for i := 0; i < 8; i++ {
 		thisColour := coloursBBC[i]
-		img.Set(x+0,y+0,thisColour)
-		img.Set(x+1,y+0,thisColour)
-		img.Set(x+0,y+1,thisColour)
-		img.Set(x+1,y+1,thisColour)
-		x+=2
+		img.Set(x+0, y+0, thisColour)
+		img.Set(x+1, y+0, thisColour)
+		img.Set(x+0, y+1, thisColour)
+		img.Set(x+1, y+1, thisColour)
+		x += 2
 	}
 }
 
-func renderCharacters(img* image.RGBA, x int, y int) {
+func renderPixelTableColours(img *image.RGBA, tableNo int, x int, y int) {
+
+	b := pixelTables[tableNo]
+	curX := x
+	seenColours := make(map[color.RGBA]bool)
+
+	for i := 0; i < len(b); i++ {
+		l, r := decodePixel(b[i])
+		leftColour := coloursBBC[l]
+		rightColour := coloursBBC[r]
+		_, leftOk := seenColours[leftColour]
+		_, rightOk := seenColours[rightColour]
+		if !leftOk {
+			img.Set(curX, y, leftColour)
+			seenColours[leftColour] = true
+			curX++
+		}
+		if !rightOk {
+			img.Set(curX, y, rightColour)
+			seenColours[rightColour] = true
+			curX++
+		}
+	}
+}
+
+func renderCharacters(img *image.RGBA, x int, y int) {
 	offsetBruce := 8301
 	offsetYamo := 9473
 
 	curX := x
 	curY := y
 
-	for x:=0; x<5; x++ {
-		for y:=0; y<26; y++ {
+	for x := 0; x < 5; x++ {
+		for y := 0; y < 26; y++ {
 			thisByte := data[offsetBruce]
-			l,r := decodePixel(thisByte)
+			l, r := decodePixel(thisByte)
 			pixelOne := coloursBBC[l]
 			pixelTwo := coloursBBC[r]
-			img.Set(curX,curY,pixelOne)
-			img.Set(curX+1,curY,pixelTwo)
+			img.Set(curX, curY, pixelOne)
+			img.Set(curX+1, curY, pixelTwo)
 			curY++
 			offsetBruce++
 		}
@@ -190,24 +215,24 @@ func renderCharacters(img* image.RGBA, x int, y int) {
 		curY = y
 	}
 
-	curX = x+12
+	curX = x + 12
 	curY = y
 
-	for x:=0; x<5; x++ {
-		for y:=0; y<26; y++ {
+	for x := 0; x < 5; x++ {
+		for y := 0; y < 26; y++ {
 			thisByte := data[offsetYamo]
-			l,r := decodePixel(thisByte)
+			l, r := decodePixel(thisByte)
 			pixelOne := coloursBBC[l]
 			pixelTwo := coloursBBC[r]
-			img.Set(curX,curY,pixelOne)
-			img.Set(curX+1,curY,pixelTwo)
+			img.Set(curX, curY, pixelOne)
+			img.Set(curX+1, curY, pixelTwo)
 			curY++
 			offsetYamo++
 		}
 		curX += 2
 		curY = y
 	}
-		
+
 	// bruce left : 8301, width 10 height 26, y first [2 frames left, 1 stood, 2 climb, 1 punch] = 6 frames
 	// bruce jump : 9231, width 10 height 26, y first [1 frame]
 	// yamo : 9473, width 10, height 26 y first [2 frames left]
@@ -217,10 +242,10 @@ func makeFont(srcImg *image.RGBA, yOffset int) {
 
 	curY := yOffset
 
-	for i:=0;i<10;i++ {
-		for y:=0;y<FontHeight;y++ {
-			for x:=0;x<FontWidth;x++ {
-				numberImages[i][x][y] = srcImg.RGBAAt(x,curY)
+	for i := 0; i < 10; i++ {
+		for y := 0; y < fontHeight; y++ {
+			for x := 0; x < fontWidth; x++ {
+				numberImages[i][x][y] = srcImg.RGBAAt(x, curY)
 			}
 			curY++
 		}
@@ -236,7 +261,7 @@ func main() {
 
 	visualObjectMap = make(map[uint32]VisualObject)
 
-	f, err := os.Open("org/BRUCE1")//os.Args[1])
+	f, err := os.Open("org/BRUCE1") //os.Args[1])
 
 	if err != nil {
 		fmt.Println(err)
@@ -253,35 +278,35 @@ func main() {
 
 	// Build the 8 pixel lookup tables
 	pixTableOffs := 7620
-	pixTableSize := []int{16,16,16,4,4,4,4,16}
-	pixelTables = make([][]byte,8)
+	pixTableSize := []int{16, 16, 16, 4, 4, 4, 4, 16}
+	pixelTables = make([][]byte, 8)
 
 	for i, e := range pixTableSize {
 		//fmt.Println("Pixel table",i+1)
 		//printPixelTable(data[pixTableOffs:pixTableOffs+e])
 		//fmt.Println()
-		pixelTables[i] = data[pixTableOffs:pixTableOffs+e]
+		pixelTables[i] = data[pixTableOffs : pixTableOffs+e]
 		pixTableOffs += e
 	}
 
 	makeBBCMicroColours()
 
 	//sanity check
-	//for i, e := range pixelTables {
-	//	fmt.Println(i,e)
+	//for i := 0; i < 8; i++ {
+	//	printPixelTable(pixelTables[i])
 	//}
 
 	ptr := 8006 + 5 // lookup table offset, the first five bytes are all 0
 
-	for i := 0; i < TotalGraphicsObjects; i++ {
+	for i := 0; i < totalGraphicsObjects; i++ {
 		tableAddr := (uint16(data[ptr+1]) << 8) | uint16(data[ptr+0])
 		fileOffst := tableAddr + 4096 - 6400
 		//outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
 		//fmt.Println(outputStr)
-		visualObjectMap[uint32(i)] = VisualObject {
-			fileOffst,data[ptr+2],data[ptr+3],(data[ptr+4] & 0xfe)>>1, (data[ptr+4] & 1)==1,
+		visualObjectMap[uint32(i)] = VisualObject{
+			fileOffst, data[ptr+2], data[ptr+3], (data[ptr+4] & 0xfe) >> 1, (data[ptr+4] & 1) == 1,
 		}
-	    ptr += 5
+		ptr += 5
 	}
 
 	fmt.Println("Total objects", len(visualObjectMap))
@@ -292,15 +317,15 @@ func main() {
 		calcImageHeight += int(e.heightInRows)
 	}
 
-	fmt.Println("Total image height",calcImageHeight)
+	fmt.Println("Total image height", calcImageHeight)
 
 	// Create an image in which to display our parsed graphics
 	const imageWidth = 640
 	imageHeight := calcImageHeight
 	black := color.RGBA{0, 0, 0, 0xff}
-	grey := color.RGBA{0x7f,0x7f,0x7f,0xff}
+	//grey := color.RGBA{0x7f, 0x7f, 0x7f, 0xff}
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{imageWidth,imageHeight}
+	lowRight := image.Point{imageWidth, imageHeight}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	// Clear it
@@ -313,33 +338,34 @@ func main() {
 	// Render the graphics in, and draw a little indicator at each one
 	renderY := 0
 
-	for i := 0; i<len(visualObjectMap); i++ {
-		img.Set(24,renderY,grey)
-		img.Set(25,renderY,grey)
-		img.Set(26,renderY,grey)
-		img.Set(27,renderY,grey)
+	for i := 0; i < len(visualObjectMap); i++ {
+		renderPixelTableColours(img, int(visualObjectMap[uint32(i)].pixelTableIndex), 38, renderY)
+		//img.Set(24, renderY, grey)
+		//img.Set(25, renderY, grey)
+		//img.Set(26, renderY, grey)
+		//img.Set(27, renderY, grey)
 		decodeGraphicToImage(img, visualObjectMap[uint32(i)], 0, renderY)
 		renderY += int(visualObjectMap[uint32(i)].heightInRows)
 	}
 
 	// This lets us build our 0-9 characters..
-	makeFont(img,196)
+	makeFont(img, 196)
 
 	// ..so we can draw an ID every 5 objects
 	renderY = 0
-	for i := 0; i<len(visualObjectMap); i++ {
-		if (i%5==0) {
-			renderNumberToImage(img,i,30,renderY)
+	for i := 0; i < len(visualObjectMap); i++ {
+		if i%5 == 0 {
+			renderNumberToImage(img, i, 30, renderY)
 		}
 		fmt.Println(i, ":", visualObjectMap[uint32(i)])
 		renderY += int(visualObjectMap[uint32(i)].heightInRows)
 	}
 
 	// Render palette
-	renderPalette(img,40,5)
+	renderPalette(img, 106, 5)
 
 	// And characters
-	renderCharacters(img,80,5)
+	renderCharacters(img, 80, 5)
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
