@@ -20,7 +20,7 @@ const fontHeight = 7
 // The entire file
 var data []byte
 
-// A map of all the visual objects.  TODO: Change this to an array rather than map
+// VisualObject is a drawable level object (e.g. statue, lantern..)
 type VisualObject struct {
 	fileOffset      uint16
 	widthInBytes    byte
@@ -29,7 +29,7 @@ type VisualObject struct {
 	maskFlag        bool
 }
 
-var visualObjectMap map[uint32]VisualObject
+var visualObjects []VisualObject
 
 // There are 8 pixel lookup tables
 var pixelTables [][]byte
@@ -259,8 +259,6 @@ func main() {
 		//return
 	}
 
-	visualObjectMap = make(map[uint32]VisualObject)
-
 	f, err := os.Open("org/BRUCE1") //os.Args[1])
 
 	if err != nil {
@@ -301,19 +299,16 @@ func main() {
 	for i := 0; i < totalGraphicsObjects; i++ {
 		tableAddr := (uint16(data[ptr+1]) << 8) | uint16(data[ptr+0])
 		fileOffst := tableAddr + 4096 - 6400
-		//outputStr := fmt.Sprintf("Object %02d : Data %04x (File offset %04d), Width %02d bytes (%02d pixels), Height %02d, Pixel Table %02d (%d)", i, tableAddr, fileOffst, data[ptr+2], data[ptr+2]*2, data[ptr+3], data[ptr+4] & 0xfe, data[ptr+4] & 1)
-		//fmt.Println(outputStr)
-		visualObjectMap[uint32(i)] = VisualObject{
-			fileOffst, data[ptr+2], data[ptr+3], (data[ptr+4] & 0xfe) >> 1, (data[ptr+4] & 1) == 1,
-		}
+		newItem := VisualObject{fileOffst, data[ptr+2], data[ptr+3], (data[ptr+4] & 0xfe) >> 1, (data[ptr+4] & 1) == 1}
+		visualObjects = append(visualObjects, newItem)
 		ptr += 5
 	}
 
-	fmt.Println("Total objects", len(visualObjectMap))
+	fmt.Println("Total objects", len(visualObjects))
 
 	calcImageHeight := 0
 
-	for _, e := range visualObjectMap {
+	for _, e := range visualObjects {
 		calcImageHeight += int(e.heightInRows)
 	}
 
@@ -338,14 +333,14 @@ func main() {
 	// Render the graphics in, and draw a little indicator at each one
 	renderY := 0
 
-	for i := 0; i < len(visualObjectMap); i++ {
-		renderPixelTableColours(img, int(visualObjectMap[uint32(i)].pixelTableIndex), 38, renderY)
+	for i := 0; i < len(visualObjects); i++ {
+		renderPixelTableColours(img, int(visualObjects[uint32(i)].pixelTableIndex), 38, renderY)
 		//img.Set(24, renderY, grey)
 		//img.Set(25, renderY, grey)
 		//img.Set(26, renderY, grey)
 		//img.Set(27, renderY, grey)
-		decodeGraphicToImage(img, visualObjectMap[uint32(i)], 0, renderY)
-		renderY += int(visualObjectMap[uint32(i)].heightInRows)
+		decodeGraphicToImage(img, visualObjects[uint32(i)], 0, renderY)
+		renderY += int(visualObjects[uint32(i)].heightInRows)
 	}
 
 	// This lets us build our 0-9 characters..
@@ -353,12 +348,12 @@ func main() {
 
 	// ..so we can draw an ID every 5 objects
 	renderY = 0
-	for i := 0; i < len(visualObjectMap); i++ {
+	for i := 0; i < len(visualObjects); i++ {
 		if i%5 == 0 {
 			renderNumberToImage(img, i, 30, renderY)
 		}
-		fmt.Println(i, ":", visualObjectMap[uint32(i)])
-		renderY += int(visualObjectMap[uint32(i)].heightInRows)
+		fmt.Println(i, ":", visualObjects[uint32(i)])
+		renderY += int(visualObjects[uint32(i)].heightInRows)
 	}
 
 	// Render palette
