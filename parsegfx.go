@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -29,7 +30,16 @@ type VisualObject struct {
 	maskFlag        bool
 }
 
-var visualObjects []VisualObject
+type visualObjectCollection []VisualObject
+
+// Implement the sort interface
+func (a visualObjectCollection) Len() int      { return len(a) }
+func (a visualObjectCollection) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a visualObjectCollection) Less(i, j int) bool {
+	return a[i].pixelTableIndex < a[j].pixelTableIndex
+}
+
+var visualObjects visualObjectCollection
 
 // There are 8 pixel lookup tables
 var pixelTables [][]byte
@@ -289,11 +299,6 @@ func main() {
 
 	makeBBCMicroColours()
 
-	//sanity check
-	//for i := 0; i < 8; i++ {
-	//	printPixelTable(pixelTables[i])
-	//}
-
 	ptr := 8006 + 5 // lookup table offset, the first five bytes are all 0
 
 	for i := 0; i < totalGraphicsObjects; i++ {
@@ -306,10 +311,13 @@ func main() {
 
 	fmt.Println("Total objects", len(visualObjects))
 
+	sort.Sort(visualObjects)
+
 	calcImageHeight := 0
 
-	for _, e := range visualObjects {
+	for i, e := range visualObjects {
 		calcImageHeight += int(e.heightInRows)
+		fmt.Println(i, e.pixelTableIndex&0xfe)
 	}
 
 	fmt.Println("Total image height", calcImageHeight)
@@ -334,17 +342,17 @@ func main() {
 	renderY := 0
 
 	for i := 0; i < len(visualObjects); i++ {
-		renderPixelTableColours(img, int(visualObjects[uint32(i)].pixelTableIndex), 38, renderY)
+		renderPixelTableColours(img, int(visualObjects[i].pixelTableIndex), 38, renderY)
 		//img.Set(24, renderY, grey)
 		//img.Set(25, renderY, grey)
 		//img.Set(26, renderY, grey)
 		//img.Set(27, renderY, grey)
-		decodeGraphicToImage(img, visualObjects[uint32(i)], 0, renderY)
-		renderY += int(visualObjects[uint32(i)].heightInRows)
+		decodeGraphicToImage(img, visualObjects[i], 0, renderY)
+		renderY += int(visualObjects[i].heightInRows)
 	}
 
 	// This lets us build our 0-9 characters..
-	makeFont(img, 196)
+	makeFont(img, 384)
 
 	// ..so we can draw an ID every 5 objects
 	renderY = 0
@@ -352,8 +360,8 @@ func main() {
 		if i%5 == 0 {
 			renderNumberToImage(img, i, 30, renderY)
 		}
-		fmt.Println(i, ":", visualObjects[uint32(i)])
-		renderY += int(visualObjects[uint32(i)].heightInRows)
+		fmt.Println(i, ":", visualObjects[i])
+		renderY += int(visualObjects[i].heightInRows)
 	}
 
 	// Render palette
