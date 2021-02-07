@@ -226,6 +226,11 @@ func renderCharacter(img *image.RGBA, fileOffset int, width int, height int, fra
 }
 
 func renderCharacters(img *image.RGBA, x int, y int) {
+
+	orgY := y
+	orgX := x
+
+	// bruce
 	renderCharacter(img, 8301, 10, 26, 1, x, y) // stand
 	y += 28
 	renderCharacter(img, 8431, 10, 26, 2, x, y) // walk (2 frames)
@@ -244,8 +249,20 @@ func renderCharacters(img *image.RGBA, x int, y int) {
 	y += 28
 	renderCharacter(img, 9361, 16, 14, 1, x, y) // hit
 
-	// TODO Yamo
-	// yamo : 9473, width 10, height 26 y first [2 frames left]
+	// yamo
+	x = orgX + 28
+	y = orgY
+	renderCharacter(img, 9473, 10, 26, 2, x, y) // walk (2 frames)
+	y += 28
+	renderCharacter(img, 9733, 8, 26, 1, x, y) // climb
+	y += 28
+	renderCharacter(img, 9837, 8, 26, 1, x, y) // fall
+	y += 28
+	renderCharacter(img, 9941, 16, 16, 1, x, y) // kick
+	y += 18
+	renderCharacter(img, 10069, 10, 26, 1, x, y) // jump
+	y += 28
+	renderCharacter(img, 10199, 16, 14, 1, x, y) // hit
 }
 
 func makeFont(srcImg *image.RGBA, yOffset int) {
