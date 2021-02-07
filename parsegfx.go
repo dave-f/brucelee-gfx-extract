@@ -203,48 +203,48 @@ func renderPixelTableColours(img *image.RGBA, tableNo int, x int, y int) {
 	}
 }
 
-func renderCharacters(img *image.RGBA, x int, y int) {
-	offsetBruce := 8301
-	offsetYamo := 9473
-
+func renderCharacter(img *image.RGBA, fileOffset int, width int, height int, frames int, x int, y int) {
 	curX := x
 	curY := y
 
-	for x := 0; x < 5; x++ {
-		for y := 0; y < 26; y++ {
-			thisByte := data[offsetBruce]
-			l, r := decodePixel(thisByte)
-			pixelOne := coloursBBC[l]
-			pixelTwo := coloursBBC[r]
-			img.Set(curX, curY, pixelOne)
-			img.Set(curX+1, curY, pixelTwo)
-			curY++
-			offsetBruce++
+	for f := 0; f < frames; f++ {
+		for i := 0; i < width/2; i++ {
+			for j := 0; j < height; j++ {
+				thisByte := data[fileOffset]
+				l, r := decodePixel(thisByte)
+				pixelOne := coloursBBC[l]
+				pixelTwo := coloursBBC[r]
+				img.Set(curX, curY, pixelOne)
+				img.Set(curX+1, curY, pixelTwo)
+				curY++
+				fileOffset++
+			}
+			curX += 2
+			curY = y
 		}
-		curX += 2
-		curY = y
 	}
+}
 
-	curX = x + 12
-	curY = y
+func renderCharacters(img *image.RGBA, x int, y int) {
+	renderCharacter(img, 8301, 10, 26, 1, x, y) // stand
+	y += 28
+	renderCharacter(img, 8431, 10, 26, 2, x, y) // walk (2 frames)
+	y += 28
+	renderCharacter(img, 8691, 8, 26, 1, x, y) // climb
+	y += 28
+	renderCharacter(img, 8795, 8, 26, 1, x, y) // fall
+	y += 28
+	renderCharacter(img, 8899, 12, 26, 1, x, y) // punch
+	y += 28
+	renderCharacter(img, 9055, 16, 6, 1, x, y) // lay
+	y += 8
+	renderCharacter(img, 9103, 16, 16, 1, x, y) // kick
+	y += 18
+	renderCharacter(img, 9231, 10, 26, 1, x, y) // jump
+	y += 28
+	renderCharacter(img, 9361, 16, 14, 1, x, y) // hit
 
-	for x := 0; x < 5; x++ {
-		for y := 0; y < 26; y++ {
-			thisByte := data[offsetYamo]
-			l, r := decodePixel(thisByte)
-			pixelOne := coloursBBC[l]
-			pixelTwo := coloursBBC[r]
-			img.Set(curX, curY, pixelOne)
-			img.Set(curX+1, curY, pixelTwo)
-			curY++
-			offsetYamo++
-		}
-		curX += 2
-		curY = y
-	}
-
-	// bruce left : 8301, width 10 height 26, y first [2 frames left, 1 stood, 2 climb, 1 punch] = 6 frames
-	// bruce jump : 9231, width 10 height 26, y first [1 frame]
+	// TODO Yamo
 	// yamo : 9473, width 10, height 26 y first [2 frames left]
 }
 
@@ -365,10 +365,10 @@ func main() {
 	}
 
 	// Render palette
-	renderPalette(img, 106, 5)
+	renderPalette(img, 80, 4)
 
 	// And characters
-	renderCharacters(img, 80, 5)
+	renderCharacters(img, 80, 8)
 
 	// Save it
 	pngFile, _ := os.Create("image.png")
