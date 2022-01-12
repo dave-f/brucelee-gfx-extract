@@ -32,15 +32,17 @@ $(OUTPUT_SSD): $(MAIN_ASM) Makefile
 
 gfx:
 #	$(PNG2BBC) gfxscript
-	$(EMACS) -batch -Q --eval="(package-initialize)" -l repack.el --eval="(fill-file \"bin/test.bin\" 12 24)"
+	$(EMACS) -batch -Q --eval="(package-initialize)" -l repack.el --eval="(fill-file \"bin/test.bin\" 2 8)"
 #	$(CP) bin\game.pal.new bin\game.pal
 #	$(RM) bin\game.pal.new
-	$(SNAP) org/BRUCE1 bin/test.bin 10565 new/BRUCE1
+#	$(SNAP) org/BRUCE1 bin/test.bin 10566 new/BRUCE1
+#	$(SNAP) org/BRUCE1 bin/test.bin 8096 new/BRUCE1
+	$(CP) org/BRUCE1 new/BRUCE1
 
 clean:
 	$(RM) $(OUTPUT_SSD)
 	$(RM) /Q bin\*.*
-	$(RM) /Q new\*.*
+#	$(RM) /Q new\*.*
 
 run:
 	$(BEEBEM) $(BEEBEM_FLAGS) $(OUTPUT_SSD)
