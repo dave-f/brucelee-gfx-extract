@@ -395,9 +395,14 @@ func main() {
 	// For object 34, and probably more, the first one is used as a "disappearing" tile, in that the physical colour
 	// can be changed from 9 to 0, so the tile can easily be made to disappear
 	// replaceGraphic(data[visualObjectMap[34].fileOffset:visualObjectMap[34].fileOffset + uint16(visualObjectMap[34].widthInBytes * visualObjectMap[34].heightInRows)], false)
+	err = os.Mkdir("new", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
 	err = ioutil.WriteFile("new/BRUCE1", data, 0777)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
 	// printing binary!
