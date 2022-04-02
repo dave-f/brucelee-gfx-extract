@@ -1,9 +1,0 @@
-* gfx
-** yamo 10,26, y ordered, offset 9473
-** yamo run 12,26, y ordered, offset 9577
-** yamo climb 8,26 y ordered, offset 9733
-** yamo fall 8,26, y ordered, offset 9837
-** smoke belch 16,24 offset 10343 - think different colours are colour cycled
-** example tile at 10565, Y first, x size 8 y size 6
-* pokes
-** lives at 0x1b
