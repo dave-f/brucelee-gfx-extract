@@ -1,5 +1,4 @@
 // Bruce Lee BBC Micro graphics extractor
-// TODO Explain how all graphics are all stored
 
 package main
 

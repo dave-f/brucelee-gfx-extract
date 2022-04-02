@@ -1,0 +1,9 @@
+load org/BRUCE1
+base 0x1900
+data 0x26e4,32
+data 0x36c4,16
+data 0x36d4,16
+data 0x36e4,16
+data 0x4d7f,1
+save disasm.txt
+
